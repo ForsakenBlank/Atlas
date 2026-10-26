@@ -22,7 +22,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
+        run: ./gradlew :app:assembleDebug
 
       - name: Name the APK
         run: cp app/build/outputs/apk/debug/app-debug.apk atlas.apk
@@ -34,7 +34,7 @@ jobs:
 
       # the apk is uploaded first so a failing test never hides a build you can try
       - name: Run unit tests
-        run: ./gradlew :shared:desktopTest :app:testDebugUnitTest --stacktrace
+        run: ./gradlew :shared:desktopTest :app:testDebugUnitTest
 
       - name: Keep test reports
         if: failure()
@@ -68,7 +68,7 @@ jobs:
 
       - name: Build the app folder
         shell: bash
-        run: ./gradlew :desktop:createDistributable --stacktrace
+        run: ./gradlew :desktop:createDistributable
 
       - name: Pack for Linux
         if: matrix.name == 'linux'

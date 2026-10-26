@@ -442,6 +442,7 @@ fun ThemesScreen(navigator: AtlasNavigator) {
         )
     }
 
+    val showWallpaper = wallpaperColoursOn(settings)
     PageScaffold(
         title = "Themes",
         onBack = navigator::back,
@@ -467,7 +468,7 @@ fun ThemesScreen(navigator: AtlasNavigator) {
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (wallpaperColoursOn(settings)) {
+            if (showWallpaper) {
                 fullWidth("wallpaper") { WallpaperBanner() }
             }
             fullWidth("mode") {
@@ -1190,3 +1191,4 @@ private fun SlotRow(slot: ThemeSlot, color: Int, onClick: () -> Unit) {
         modifier = Modifier.clickable(onClick = onClick),
     )
 }
+

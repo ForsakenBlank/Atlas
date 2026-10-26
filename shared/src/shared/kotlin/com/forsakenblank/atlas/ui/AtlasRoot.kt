@@ -120,6 +120,7 @@ import com.forsakenblank.atlas.ui.track.TrackerDetailScreen
 import com.forsakenblank.atlas.platform.BackHandler
 import com.forsakenblank.atlas.platform.DeviceKind
 import com.forsakenblank.atlas.platform.platform
+import androidx.savedstate.read
 
 fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (section) {
     Section.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
@@ -328,21 +329,21 @@ fun AtlasRoot() {
                 composable(Section.EXPLORER.route) { Page { ExplorerScreen(navigator) } }
 
                 composable(Routes.NOTE, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    NoteEditorScreen(entry.arguments!!.getLong("id"), navigator)
+                    NoteEditorScreen(entry.long("id"), navigator)
                 }
                 composable(Routes.SHEET, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    SheetEditorScreen(entry.arguments!!.getLong("id"), navigator)
+                    SheetEditorScreen(entry.long("id"), navigator)
                 }
                 composable(Routes.TRACKER, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    TrackerDetailScreen(entry.arguments!!.getLong("id"), navigator)
+                    TrackerDetailScreen(entry.long("id"), navigator)
                 }
                 composable(Routes.SETTINGS) { SettingsScreen(navigator) }
                 composable(Routes.SETTINGS_CATEGORY, arguments = listOf(navArgument("category") { type = NavType.StringType })) { entry ->
-                    SettingsCategoryScreen(entry.arguments?.getString("category").orEmpty(), navigator)
+                    SettingsCategoryScreen(entry.string("category").orEmpty(), navigator)
                 }
                 composable(Routes.THEMES) { ThemesScreen(navigator) }
                 composable(Routes.THEME_EDITOR, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                    ThemeEditorScreen(entry.arguments?.getString("id") ?: "new", navigator)
+                    ThemeEditorScreen(entry.string("id") ?: "new", navigator)
                 }
                 composable(Routes.TRASH) { TrashScreen(navigator) }
                 composable(Routes.SEARCH) { SearchScreen(navigator) }
@@ -356,13 +357,13 @@ fun AtlasRoot() {
                         },
                     ),
                 ) { entry ->
-                    EventEditorScreen(entry.arguments!!.getLong("id"), entry.arguments!!.getLong("day"), navigator)
+                    EventEditorScreen(entry.long("id"), entry.long("day"), navigator)
                 }
                 composable(Routes.SUBJECTS) { SubjectsScreen(navigator) }
                 composable(Routes.TERMS) { TermsScreen(navigator) }
                 composable(Routes.STARTER_PACKS) { StarterPacksScreen(navigator) }
                 composable(Routes.TOOL, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                    ToolScreen(entry.arguments?.getString("id").orEmpty(), navigator)
+                    ToolScreen(entry.string("id").orEmpty(), navigator)
                 }
                 composable(
                     Routes.COUNTDOWN,
@@ -382,12 +383,11 @@ fun AtlasRoot() {
                         },
                     ),
                 ) { entry ->
-                    val args = entry.arguments!!
                     CountdownEditorScreen(
-                        id = args.getLong("id"),
-                        kind = args.getString("kind").orEmpty(),
-                        countUp = args.getBoolean("countUp"),
-                        day = args.getLong("day"),
+                        id = entry.long("id"),
+                        kind = entry.string("kind").orEmpty(),
+                        countUp = entry.flag("countUp"),
+                        day = entry.long("day"),
                         navigator = navigator,
                     )
                 }
@@ -439,3 +439,10 @@ private fun BottomBar(tabs: List<Section>, current: Section?, settings: AppSetti
         bar()
     }
 }
+
+// route arguments read the same way on the phone and the pc
+private fun NavBackStackEntry.long(name: String): Long = arguments?.read { if (contains(name)) getLong(name) else null } ?: 0L
+
+private fun NavBackStackEntry.string(name: String): String? = arguments?.read { if (contains(name)) getString(name) else null }
+
+private fun NavBackStackEntry.flag(name: String): Boolean = arguments?.read { if (contains(name)) getBoolean(name) else null } ?: false

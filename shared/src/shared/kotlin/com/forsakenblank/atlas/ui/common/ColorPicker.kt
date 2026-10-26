@@ -56,7 +56,21 @@ import com.forsakenblank.atlas.ui.theme.ItemColors
 import com.forsakenblank.atlas.ui.theme.hex
 import com.forsakenblank.atlas.ui.theme.onColor
 
-private fun Int.toHsv(): FloatArray = FloatArray(3).also { android.graphics.Color.colorToHSV(this, it) }
+// hue in degrees, saturation and value from 0 to 1, the same numbers android's colorToHSV gives
+private fun Int.toHsv(): FloatArray {
+    val r = ((this shr 16) and 0xFF) / 255f
+    val g = ((this shr 8) and 0xFF) / 255f
+    val b = (this and 0xFF) / 255f
+    val max = maxOf(r, g, b)
+    val delta = max - minOf(r, g, b)
+    val hue = when {
+        delta == 0f -> 0f
+        max == r -> 60f * (((g - b) / delta).mod(6f))
+        max == g -> 60f * ((b - r) / delta + 2f)
+        else -> 60f * ((r - g) / delta + 4f)
+    }
+    return floatArrayOf(hue, if (max == 0f) 0f else delta / max, max)
+}
 
 private fun hsvColor(h: Float, s: Float, v: Float): Color = Color.hsv(h.coerceIn(0f, 360f), s.coerceIn(0f, 1f), v.coerceIn(0f, 1f))
 

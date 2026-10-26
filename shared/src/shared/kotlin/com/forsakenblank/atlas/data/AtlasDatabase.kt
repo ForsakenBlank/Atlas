@@ -44,8 +44,9 @@ class Converters {
         Item::class, NoteBody::class, Tracker::class, LogEntry::class, Tag::class, ItemTag::class,
         Event::class, Task::class, Subject::class, TimetableSlot::class, Term::class,
         SheetBody::class, Countdown::class, MoneyAccount::class, MoneyEntry::class, MoneyQuick::class, DayNote::class,
+        SyncId::class, SyncPeer::class,
     ],
-    version = 6,
+    version = 7,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -61,6 +62,7 @@ abstract class AtlasDatabase : RoomDatabase() {
     abstract fun countdowns(): CountdownDao
     abstract fun money(): MoneyDao
     abstract fun dayNotes(): DayNoteDao
+    abstract fun sync(): SyncDao
 
     companion object {
         // version 2 adds the calendar, tasks, timetable and number tracker settings
@@ -145,7 +147,19 @@ abstract class AtlasDatabase : RoomDatabase() {
             ),
         )
 
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        // version 7 adds what wi-fi sync needs to match rows up between devices
+        private val MIGRATION_6_7 = sqlMigration(
+            6, 7,
+            listOf(
+                "CREATE TABLE IF NOT EXISTS `sync_ids` (`kind` TEXT NOT NULL, `localId` INTEGER NOT NULL, `uid` TEXT NOT NULL, " +
+                    "PRIMARY KEY(`kind`, `localId`))",
+                "CREATE UNIQUE INDEX IF NOT EXISTS `index_sync_ids_kind_uid` ON `sync_ids` (`kind`, `uid`)",
+                "CREATE TABLE IF NOT EXISTS `sync_peers` (`peerId` TEXT NOT NULL, `name` TEXT NOT NULL, `kind` TEXT NOT NULL, " +
+                    "`lastSync` INTEGER NOT NULL, `address` TEXT, `baseline` TEXT NOT NULL, PRIMARY KEY(`peerId`))",
+            ),
+        )
+
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
     }
 }
 

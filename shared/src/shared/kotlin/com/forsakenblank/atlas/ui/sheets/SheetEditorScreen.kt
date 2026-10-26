@@ -1,7 +1,7 @@
 package com.forsakenblank.atlas.ui.sheets
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.LocalOverscrollConfiguration
+import androidx.compose.foundation.LocalOverscrollFactory
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -635,7 +635,7 @@ private fun SheetGrid(
     var columnMenuFor by remember { mutableStateOf<Int?>(null) }
 
     // every row scrolls sideways on its own, a stretch at the edge would pull just one row out of line
-    CompositionLocalProvider(LocalOverscrollConfiguration provides null) {
+    CompositionLocalProvider(LocalOverscrollFactory provides null) {
         Column(modifier) {
             // column letters stay put while the rows scroll under them
             Row(Modifier.background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
