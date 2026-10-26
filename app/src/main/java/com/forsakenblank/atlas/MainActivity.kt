@@ -18,9 +18,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.forsakenblank.atlas.data.AppIcon
-import com.forsakenblank.atlas.ui.AtlasRoot
-import com.forsakenblank.atlas.ui.onboarding.WelcomeScreen
-import com.forsakenblank.atlas.ui.theme.AtlasTheme
+import com.forsakenblank.atlas.ui.AtlasContent
 import com.forsakenblank.atlas.ui.theme.isDarkMode
 import com.forsakenblank.atlas.ui.theme.themeFor
 
@@ -28,9 +26,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val app = application as AtlasApp
+        val app = (application as AtlasApplication).atlas
         setContent {
-            // nothing is drawn until settings load, so the wrong theme never flashes up
+            AtlasContent(app)
+
+            // the phone only bits below wait for settings like the shared content does
             val settings by app.settings.collectAsStateWithLifecycle()
             val current = settings ?: return@setContent
 
@@ -60,10 +60,6 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-
-            AtlasTheme(current) {
-                if (current.onboarded) AtlasRoot() else WelcomeScreen(onDone = {})
-            }
         }
     }
 }
@@ -71,7 +67,7 @@ class MainActivity : ComponentActivity() {
 // each icon is an activity alias in the manifest, only the chosen one stays enabled
 fun applyAppIcon(context: Context, icon: AppIcon) {
     val pm = context.packageManager
-    val prefix = AtlasApp::class.java.name.substringBeforeLast('.')
+    val prefix = AtlasApplication::class.java.name.substringBeforeLast('.')
     AppIcon.entries.forEach { option ->
         val component = ComponentName(context.packageName, "$prefix.${option.alias}")
         val wanted = if (option == icon) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED

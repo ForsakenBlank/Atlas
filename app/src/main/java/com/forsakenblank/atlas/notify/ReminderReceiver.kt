@@ -3,7 +3,7 @@ package com.forsakenblank.atlas.notify
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import com.forsakenblank.atlas.AtlasApp
+import com.forsakenblank.atlas.AtlasApplication
 import kotlinx.coroutines.launch
 
 class ReminderReceiver : BroadcastReceiver() {
@@ -17,10 +17,10 @@ class ReminderReceiver : BroadcastReceiver() {
             // a new day, a restart, a clock or time zone change, or an update all plan again
             ACTION_REFRESH, Intent.ACTION_BOOT_COMPLETED, Intent.ACTION_TIME_CHANGED,
             Intent.ACTION_TIMEZONE_CHANGED, Intent.ACTION_MY_PACKAGE_REPLACED -> {
-                val app = context.applicationContext as? AtlasApp ?: return
+                val atlas = (context.applicationContext as? AtlasApplication)?.atlas ?: return
                 val pending = goAsync()
-                app.appScope.launch {
-                    runCatching { app.reminders.reschedule() }
+                atlas.appScope.launch {
+                    runCatching { atlas.rescheduleReminders() }
                     pending.finish()
                 }
             }

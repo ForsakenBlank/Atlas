@@ -15,4 +15,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "Atlas"
-include(":app")
+
+// shared holds almost everything, app is the android shell and desktop the windows and linux one
+include(":shared", ":app", ":desktop")
