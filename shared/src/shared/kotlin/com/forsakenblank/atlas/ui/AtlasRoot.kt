@@ -123,6 +123,16 @@ import com.forsakenblank.atlas.platform.platform
 import androidx.savedstate.read
 import androidx.compose.material.icons.outlined.Sync
 import com.forsakenblank.atlas.ui.sync.SyncScreen
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FloatingActionButtonDefaults
 
 fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (section) {
     Section.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
@@ -215,7 +225,13 @@ private class Motion(private val settings: () -> AppSettings) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AtlasRoot() {
+fun AtlasRoot() = BoxWithConstraints(Modifier.fillMaxSize()) {
+    // a pc window or a tablet gets every section in a rail down the side instead of five tabs at the bottom
+    AtlasRootContent(wide = maxWidth >= 840.dp)
+}
+
+@Composable
+private fun AtlasRootContent(wide: Boolean) {
     val settings = LocalSettings.current
     val app = atlasApp()
     val nav = rememberNavController()
@@ -226,8 +242,9 @@ fun AtlasRoot() {
     val backStack by nav.currentBackStackEntryAsState()
     val route = backStack?.destination?.route
     val tabs = settings.visibleTabs()
+    val navTabs = if (wide) Section.entries.filter { it !in settings.hiddenSections } else tabs
     val section = Section.fromRoute(route)
-    val onTab = section != null && section in tabs
+    val onTab = section != null && section in navTabs
 
     var sectionsMenu by remember { mutableStateOf(false) }
     val latest by rememberUpdatedState(settings)
@@ -252,151 +269,181 @@ fun AtlasRoot() {
     }
 
     CompositionLocalProvider(LocalSnackbar provides snackbar) {
-        Scaffold(
-            topBar = {
-                if (section != null) {
-                    TopAppBar(
-                        title = { Text(if (section == Section.HOME) "Atlas" else section.label) },
-                        navigationIcon = {
-                            if (!onTab) {
-                                IconButton(onClick = navigator::back) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                                }
-                            }
-                        },
-                        actions = {
-                            // every section that is not a tab stays one tap away from anywhere
-                            val others = Section.entries.filter { it !in tabs && it !in settings.hiddenSections && it != section }
-                            if (others.isNotEmpty()) {
-                                Box {
-                                    IconButton(onClick = { sectionsMenu = true }) {
-                                        Icon(Icons.Outlined.Apps, contentDescription = "All sections")
+        Row(Modifier.fillMaxSize()) {
+            if (wide) SideRail(navTabs, section, onSync = navigator::openSync) { navigator.openSection(it, isTab = true) }
+            Scaffold(
+                modifier = Modifier.weight(1f),
+                topBar = {
+                    if (section != null) {
+                        TopAppBar(
+                            title = { Text(if (section == Section.HOME) "Atlas" else section.label) },
+                            navigationIcon = {
+                                if (!onTab) {
+                                    IconButton(onClick = navigator::back) {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                                     }
-                                    DropdownMenu(expanded = sectionsMenu, onDismissRequest = { sectionsMenu = false }) {
-                                        others.forEach { other ->
-                                            DropdownMenuItem(
-                                                text = { Text(other.label) },
-                                                leadingIcon = { Icon(sectionIcon(other, selected = false), contentDescription = null) },
-                                                onClick = {
-                                                    sectionsMenu = false
-                                                    navigator.openSection(other, isTab = false)
-                                                },
-                                            )
+                                }
+                            },
+                            actions = {
+                                // every section that is not a tab stays one tap away from anywhere
+                                val others = Section.entries.filter { it !in navTabs && it !in settings.hiddenSections && it != section }
+                                if (others.isNotEmpty()) {
+                                    Box {
+                                        IconButton(onClick = { sectionsMenu = true }) {
+                                            Icon(Icons.Outlined.Apps, contentDescription = "All sections")
+                                        }
+                                        DropdownMenu(expanded = sectionsMenu, onDismissRequest = { sectionsMenu = false }) {
+                                            others.forEach { other ->
+                                                DropdownMenuItem(
+                                                    text = { Text(other.label) },
+                                                    leadingIcon = { Icon(sectionIcon(other, selected = false), contentDescription = null) },
+                                                    onClick = {
+                                                        sectionsMenu = false
+                                                        navigator.openSection(other, isTab = false)
+                                                    },
+                                                )
+                                            }
                                         }
                                     }
                                 }
-                            }
-                            IconButton(onClick = navigator::openSync) {
-                                Icon(Icons.Outlined.Sync, contentDescription = "Sync")
-                            }
-                            IconButton(onClick = navigator::openSearch) {
-                                Icon(Icons.Outlined.Search, contentDescription = "Search")
-                            }
-                            IconButton(onClick = navigator::openSettings) {
-                                Icon(Icons.Outlined.Settings, contentDescription = "Settings")
-                            }
-                        },
-                    )
-                }
-            },
-            bottomBar = {
-                if (onTab && tabs.size > 1) {
-                    BottomBar(tabs = tabs, current = section, settings = settings) { navigator.openSection(it, isTab = true) }
-                }
-            },
-            snackbarHost = { SnackbarHost(snackbar) },
-            // the bars handle system insets, pages bring their own scaffold
-            contentWindowInsets = WindowInsets(0, 0, 0, 0),
-        ) { padding ->
-            NavHost(
-                navController = nav,
-                startDestination = startTab.route,
-                modifier = Modifier
-                    .padding(padding)
-                    .then(if (section != null && !(onTab && tabs.size > 1)) Modifier.navigationBarsPadding() else Modifier),
-                enterTransition = { motion.enter(this, pop = false) },
-                exitTransition = { motion.exit(this, pop = false) },
-                popEnterTransition = { motion.enter(this, pop = true) },
-                popExitTransition = { motion.exit(this, pop = true) },
-            ) {
-                composable(Section.HOME.route) { Page { HomeScreen(navigator) } }
-                composable(Section.NOTES.route) { Page { NotesScreen(navigator) } }
-                composable(Section.SHEETS.route) { Page { SheetsScreen(navigator) } }
-                composable(Section.CALENDAR.route) { Page { CalendarScreen(navigator) } }
-                composable(Section.TIMETABLE.route) { Page { TimetableScreen(navigator) } }
-                composable(Section.TASKS.route) { Page { TasksScreen(navigator) } }
-                composable(Section.COUNTDOWNS.route) { Page { CountdownsScreen(navigator) } }
-                composable(Section.MONEY.route) { Page { MoneyScreen(navigator) } }
-                composable(Routes.TAX) { Page { TaxScreen(navigator) } }
-                composable(Section.TRACK.route) { Page { TrackScreen(navigator) } }
-                composable(Section.FOCUS.route) { Page { FocusScreen(navigator) } }
-                composable(Section.TOOLS.route) { Page { ToolsScreen(navigator) } }
-                composable(Section.EXPLORER.route) { Page { ExplorerScreen(navigator) } }
+                                if (!wide) {
+                                    IconButton(onClick = navigator::openSync) {
+                                        Icon(Icons.Outlined.Sync, contentDescription = "Sync")
+                                    }
+                                }
+                                IconButton(onClick = navigator::openSearch) {
+                                    Icon(Icons.Outlined.Search, contentDescription = "Search")
+                                }
+                                IconButton(onClick = navigator::openSettings) {
+                                    Icon(Icons.Outlined.Settings, contentDescription = "Settings")
+                                }
+                            },
+                        )
+                    }
+                },
+                bottomBar = {
+                    if (!wide && onTab && tabs.size > 1) {
+                        BottomBar(tabs = tabs, current = section, settings = settings) { navigator.openSection(it, isTab = true) }
+                    }
+                },
+                snackbarHost = { SnackbarHost(snackbar) },
+                // the bars handle system insets, pages bring their own scaffold
+                contentWindowInsets = WindowInsets(0, 0, 0, 0),
+            ) { padding ->
+                NavHost(
+                    navController = nav,
+                    startDestination = startTab.route,
+                    modifier = Modifier
+                        .padding(padding)
+                        .then(if (section != null && (wide || !(onTab && tabs.size > 1))) Modifier.navigationBarsPadding() else Modifier),
+                    enterTransition = { motion.enter(this, pop = false) },
+                    exitTransition = { motion.exit(this, pop = false) },
+                    popEnterTransition = { motion.enter(this, pop = true) },
+                    popExitTransition = { motion.exit(this, pop = true) },
+                ) {
+                    composable(Section.HOME.route) { Page { HomeScreen(navigator) } }
+                    composable(Section.NOTES.route) { Page { NotesScreen(navigator) } }
+                    composable(Section.SHEETS.route) { Page { SheetsScreen(navigator) } }
+                    composable(Section.CALENDAR.route) { Page { CalendarScreen(navigator) } }
+                    composable(Section.TIMETABLE.route) { Page { TimetableScreen(navigator) } }
+                    composable(Section.TASKS.route) { Page { TasksScreen(navigator) } }
+                    composable(Section.COUNTDOWNS.route) { Page { CountdownsScreen(navigator) } }
+                    composable(Section.MONEY.route) { Page { MoneyScreen(navigator) } }
+                    composable(Routes.TAX) { Page { TaxScreen(navigator) } }
+                    composable(Section.TRACK.route) { Page { TrackScreen(navigator) } }
+                    composable(Section.FOCUS.route) { Page { FocusScreen(navigator) } }
+                    composable(Section.TOOLS.route) { Page { ToolsScreen(navigator) } }
+                    composable(Section.EXPLORER.route) { Page { ExplorerScreen(navigator) } }
 
-                composable(Routes.NOTE, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    NoteEditorScreen(entry.long("id"), navigator)
+                    composable(Routes.NOTE, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                        NoteEditorScreen(entry.long("id"), navigator)
+                    }
+                    composable(Routes.SHEET, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                        SheetEditorScreen(entry.long("id"), navigator)
+                    }
+                    composable(Routes.TRACKER, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
+                        TrackerDetailScreen(entry.long("id"), navigator)
+                    }
+                    composable(Routes.SETTINGS) { SettingsScreen(navigator) }
+                    composable(Routes.SETTINGS_CATEGORY, arguments = listOf(navArgument("category") { type = NavType.StringType })) { entry ->
+                        SettingsCategoryScreen(entry.string("category").orEmpty(), navigator)
+                    }
+                    composable(Routes.THEMES) { ThemesScreen(navigator) }
+                    composable(Routes.THEME_EDITOR, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                        ThemeEditorScreen(entry.string("id") ?: "new", navigator)
+                    }
+                    composable(Routes.TRASH) { TrashScreen(navigator) }
+                    composable(Routes.SYNC) { SyncScreen(navigator) }
+                    composable(Routes.SEARCH) { SearchScreen(navigator) }
+                    composable(
+                        Routes.EVENT,
+                        arguments = listOf(
+                            navArgument("id") { type = NavType.LongType },
+                            navArgument("day") {
+                                type = NavType.LongType
+                                defaultValue = 0L
+                            },
+                        ),
+                    ) { entry ->
+                        EventEditorScreen(entry.long("id"), entry.long("day"), navigator)
+                    }
+                    composable(Routes.SUBJECTS) { SubjectsScreen(navigator) }
+                    composable(Routes.TERMS) { TermsScreen(navigator) }
+                    composable(Routes.STARTER_PACKS) { StarterPacksScreen(navigator) }
+                    composable(Routes.TOOL, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
+                        ToolScreen(entry.string("id").orEmpty(), navigator)
+                    }
+                    composable(
+                        Routes.COUNTDOWN,
+                        arguments = listOf(
+                            navArgument("id") { type = NavType.LongType },
+                            navArgument("kind") {
+                                type = NavType.StringType
+                                defaultValue = "EVENT"
+                            },
+                            navArgument("countUp") {
+                                type = NavType.BoolType
+                                defaultValue = false
+                            },
+                            navArgument("day") {
+                                type = NavType.LongType
+                                defaultValue = 0L
+                            },
+                        ),
+                    ) { entry ->
+                        CountdownEditorScreen(
+                            id = entry.long("id"),
+                            kind = entry.string("kind").orEmpty(),
+                            countUp = entry.flag("countUp"),
+                            day = entry.long("day"),
+                            navigator = navigator,
+                        )
+                    }
                 }
-                composable(Routes.SHEET, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    SheetEditorScreen(entry.long("id"), navigator)
-                }
-                composable(Routes.TRACKER, arguments = listOf(navArgument("id") { type = NavType.LongType })) { entry ->
-                    TrackerDetailScreen(entry.long("id"), navigator)
-                }
-                composable(Routes.SETTINGS) { SettingsScreen(navigator) }
-                composable(Routes.SETTINGS_CATEGORY, arguments = listOf(navArgument("category") { type = NavType.StringType })) { entry ->
-                    SettingsCategoryScreen(entry.string("category").orEmpty(), navigator)
-                }
-                composable(Routes.THEMES) { ThemesScreen(navigator) }
-                composable(Routes.THEME_EDITOR, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                    ThemeEditorScreen(entry.string("id") ?: "new", navigator)
-                }
-                composable(Routes.TRASH) { TrashScreen(navigator) }
-                composable(Routes.SYNC) { SyncScreen(navigator) }
-                composable(Routes.SEARCH) { SearchScreen(navigator) }
-                composable(
-                    Routes.EVENT,
-                    arguments = listOf(
-                        navArgument("id") { type = NavType.LongType },
-                        navArgument("day") {
-                            type = NavType.LongType
-                            defaultValue = 0L
-                        },
-                    ),
-                ) { entry ->
-                    EventEditorScreen(entry.long("id"), entry.long("day"), navigator)
-                }
-                composable(Routes.SUBJECTS) { SubjectsScreen(navigator) }
-                composable(Routes.TERMS) { TermsScreen(navigator) }
-                composable(Routes.STARTER_PACKS) { StarterPacksScreen(navigator) }
-                composable(Routes.TOOL, arguments = listOf(navArgument("id") { type = NavType.StringType })) { entry ->
-                    ToolScreen(entry.string("id").orEmpty(), navigator)
-                }
-                composable(
-                    Routes.COUNTDOWN,
-                    arguments = listOf(
-                        navArgument("id") { type = NavType.LongType },
-                        navArgument("kind") {
-                            type = NavType.StringType
-                            defaultValue = "EVENT"
-                        },
-                        navArgument("countUp") {
-                            type = NavType.BoolType
-                            defaultValue = false
-                        },
-                        navArgument("day") {
-                            type = NavType.LongType
-                            defaultValue = 0L
-                        },
-                    ),
-                ) { entry ->
-                    CountdownEditorScreen(
-                        id = entry.long("id"),
-                        kind = entry.string("kind").orEmpty(),
-                        countUp = entry.flag("countUp"),
-                        day = entry.long("day"),
-                        navigator = navigator,
-                    )
-                }
+            }
+        }
+    }
+}
+
+// every section down the side, scrolls when the window is short
+@Composable
+private fun SideRail(sections: List<Section>, current: Section?, onSync: () -> Unit, onOpen: (Section) -> Unit) {
+    NavigationRail(
+        header = {
+            FloatingActionButton(onClick = onSync, elevation = FloatingActionButtonDefaults.bottomAppBarFabElevation()) {
+                Icon(Icons.Outlined.Sync, contentDescription = "Sync")
+            }
+        },
+    ) {
+        Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            sections.forEach { item ->
+                val selected = item == current
+                NavigationRailItem(
+                    selected = selected,
+                    onClick = { if (!selected) onOpen(item) },
+                    icon = { Icon(sectionIcon(item, selected), contentDescription = item.label) },
+                    label = { Text(item.label, maxLines = 1) },
+                )
             }
         }
     }
