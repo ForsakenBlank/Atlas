@@ -19,8 +19,6 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
-import java.security.MessageDigest
-import java.util.Base64
 
 data class HostInfo(val code: String, val addresses: List<String>, val port: Int)
 
@@ -112,7 +110,7 @@ class SyncManager(private val app: AtlasApp) {
                 val base = baselineFor(peerId)
                 buildJsonObject {
                     put("records", json.encodeToJsonElement(records, mine))
-                    put("baseDigest", digest(base))
+                    put("baseDigest", baselineDigest(base))
                 }
             }
             "apply" -> {
@@ -152,10 +150,12 @@ class SyncManager(private val app: AtlasApp) {
             }
             _client.value = ClientStep.Working(SyncStatus("Comparing…"))
             val theirs = json.decodeFromJsonElement(records, answer.getValue("records"))
-            val mine = store.records()
+            // a device that only keeps some things, like Luminescent's notes and timers, says so up front,
+            // everything else stays out of the comparison so it is never mistaken for deleted over there
+            val mine = Scope.from(hello["accepts"]).filter(store.records())
             val saved = baselineFor(peer.deviceId)
             // both sides remember the same state after a sync, when they disagree the safe thing is to compare from scratch
-            val base = if (digest(saved) == answer.str("baseDigest")) saved else emptyMap()
+            val base = if (baselineDigest(saved) == answer.str("baseDigest")) saved else emptyMap()
             val plan = withContext(Dispatchers.Default) { SyncPlanner.plan(mine, theirs, base) }
             app.updateSettings { it.copy(lastSyncAddress = address.trim()) }
             session = Session(address, key, peer, plan)
@@ -248,11 +248,6 @@ class SyncManager(private val app: AtlasApp) {
                 baseline = json.encodeToString(baselines, baseline),
             ),
         )
-    }
-
-    private fun digest(baseline: Map<String, String>): String {
-        val text = canonical(JsonObject(baseline.mapValues { JsonPrimitive(it.value) }))
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(text.toByteArray()))
     }
 
     private fun JsonObject.str(name: String): String? = (this[name] as? JsonPrimitive)?.contentOrNull

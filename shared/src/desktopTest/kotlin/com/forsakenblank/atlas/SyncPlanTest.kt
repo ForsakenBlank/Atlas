@@ -3,9 +3,11 @@ package com.forsakenblank.atlas
 import com.forsakenblank.atlas.sync.Change
 import com.forsakenblank.atlas.sync.Choice
 import com.forsakenblank.atlas.sync.Kind
+import com.forsakenblank.atlas.sync.Scope
 import com.forsakenblank.atlas.sync.SyncPlanner
 import com.forsakenblank.atlas.sync.SyncRecord
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -116,5 +118,27 @@ class SyncPlanTest {
         val a = record(Kind.ITEM, "x", "type" to "NOTE", "name" to "A", "updated" to 1)
         val b = SyncRecord(Kind.ITEM, "x", JsonObject(mapOf("updated" to JsonPrimitive(99), "name" to JsonPrimitive("A"), "type" to JsonPrimitive("NOTE"))))
         assertEquals(a.hash, b.hash)
+    }
+
+    @Test
+    fun aDeviceThatOnlyKeepsSomeThingsOnlySeesThose() {
+        val note = record(Kind.ITEM, "n", "type" to "NOTE", "name" to "Ideas")
+        val timer = SyncRecord(
+            Kind.ITEM, "t",
+            JsonObject(mapOf("type" to JsonPrimitive("TRACKER"), "name" to JsonPrimitive("Coding"), "tracker" to JsonObject(mapOf("kind" to JsonPrimitive("TIMER"))))),
+        )
+        val counter = SyncRecord(
+            Kind.ITEM, "c",
+            JsonObject(mapOf("type" to JsonPrimitive("TRACKER"), "name" to JsonPrimitive("Water"), "tracker" to JsonObject(mapOf("kind" to JsonPrimitive("COUNTER"))))),
+        )
+        val timerLog = log("l1", "t", 1, 60)
+        val counterLog = log("l2", "c", 1, 0)
+        val task = record(Kind.TASK, "k", "title" to "Bins")
+
+        val scope = Scope.from(Json.parseToJsonElement("""{"kinds":["item","log"],"items":["NOTE","TRACKER:TIMER"]}"""))
+        val kept = scope.filter(listOf(note, timer, counter, timerLog, counterLog, task)).map { it.uid }
+
+        assertEquals(listOf("n", "t", "l1"), kept)
+        assertEquals(6, Scope.from(null).filter(listOf(note, timer, counter, timerLog, counterLog, task)).size)
     }
 }

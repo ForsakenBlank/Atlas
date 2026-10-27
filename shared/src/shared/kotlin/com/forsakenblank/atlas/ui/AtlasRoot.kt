@@ -223,13 +223,13 @@ private class Motion(private val settings: () -> AppSettings) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AtlasRoot() = BoxWithConstraints(Modifier.fillMaxSize()) {
     // a pc window or a tablet gets every section in a rail down the side instead of five tabs at the bottom
     AtlasRootContent(wide = maxWidth >= 840.dp)
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AtlasRootContent(wide: Boolean) {
     val settings = LocalSettings.current

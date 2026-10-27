@@ -79,6 +79,12 @@ internal fun canonical(element: JsonElement): String = when (element) {
     else -> element.toString()
 }
 
+// both sides compare these before trusting that they remember the same last sync
+fun baselineDigest(baseline: Map<String, String>): String {
+    val text = canonical(JsonObject(baseline.mapValues { JsonPrimitive(it.value) }))
+    return Base64.getUrlEncoder().withoutPadding().encodeToString(MessageDigest.getInstance("SHA-256").digest(text.toByteArray()))
+}
+
 fun newUid(): String = UUID.randomUUID().toString()
 
 // local ids to uids and back for one sync, new pairs are saved when the sync ends
