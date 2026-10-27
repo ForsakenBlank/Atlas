@@ -260,4 +260,5 @@ data class DayNote(
     @PrimaryKey val day: Long, // epoch day
     val text: String,
     val updated: Long = System.currentTimeMillis(),
+    val mood: Int? = null, // 1 awful to 5 great, set from the journal
 )

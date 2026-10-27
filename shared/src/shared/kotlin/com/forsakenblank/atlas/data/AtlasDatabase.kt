@@ -46,7 +46,7 @@ class Converters {
         SheetBody::class, Countdown::class, MoneyAccount::class, MoneyEntry::class, MoneyQuick::class, DayNote::class,
         SyncId::class, SyncPeer::class,
     ],
-    version = 7,
+    version = 8,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -159,7 +159,12 @@ abstract class AtlasDatabase : RoomDatabase() {
             ),
         )
 
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+        // version 8 gives a day a mood, the journal writes it next to the day's note
+        private val MIGRATION_7_8 = sqlMigration(7, 8, listOf("ALTER TABLE `day_notes` ADD COLUMN `mood` INTEGER"))
+
+        val MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8,
+        )
     }
 }
 

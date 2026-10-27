@@ -294,6 +294,24 @@ class AtlasRepository(private val db: AtlasDatabase) {
         }
     }
 
+    // habits: a yes or no flips for that day, a counter goes up by one
+    suspend fun tickDay(trackerId: Long, day: LocalDate) {
+        val tracker = trackers.get(trackerId) ?: return
+        val logs = trackers.logsBetweenOnce(trackerId, day.startMillis(), day.plusDays(1).startMillis())
+        if (tracker.kind == TrackerKind.YES_NO && logs.isNotEmpty()) {
+            db.inTransaction { logs.forEach { trackers.deleteLog(it.id) } }
+        } else {
+            logPast(trackerId, day, count = 1, value = 1.0, seconds = null, note = null)
+        }
+    }
+
+    // takes the latest log of that day back off, for a counter tapped once too often
+    suspend fun untickDay(trackerId: Long, day: LocalDate) {
+        trackers.logsBetweenOnce(trackerId, day.startMillis(), day.plusDays(1).startMillis())
+            .maxByOrNull { it.timestamp }
+            ?.let { trackers.deleteLog(it.id) }
+    }
+
     // calendar
 
     fun eventsBetween(from: Long, to: Long): Flow<List<Event>> = events.eventsBetween(from, to)
@@ -411,9 +429,16 @@ class AtlasRepository(private val db: AtlasDatabase) {
     fun dayNotes(): Flow<List<DayNote>> = dayNotes.all()
 
     // an empty note is the same as no note
-    suspend fun saveDayNote(day: Long, text: String) {
+    // the journal writes both at once, a day with no words and no mood is not kept
+    suspend fun saveJournal(day: Long, text: String, mood: Int?) {
         val clean = text.trim()
-        if (clean.isEmpty()) dayNotes.delete(day) else dayNotes.upsert(DayNote(day, clean))
+        if (clean.isEmpty() && mood == null) dayNotes.delete(day) else dayNotes.upsert(DayNote(day, clean, mood = mood))
+    }
+
+    // the calendar only edits the words, a mood set in the journal stays
+    suspend fun saveDayNote(day: Long, text: String) {
+        val mood = dayNotes.get(day)?.mood
+        saveJournal(day, text, mood)
     }
 
     // money

@@ -29,11 +29,11 @@ data class Backup(
     val moneyEntries: List<MoneyEntry> = emptyList(),
     // added in version 5
     val moneyQuick: List<MoneyQuick> = emptyList(),
-    // added in version 6
+    // added in version 6, version 8 gives each a mood
     val dayNotes: List<DayNote> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 6
+        const val CURRENT_VERSION = 8
     }
 }
 

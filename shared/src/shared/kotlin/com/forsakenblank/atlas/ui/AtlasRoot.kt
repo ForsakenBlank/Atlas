@@ -133,6 +133,13 @@ import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonDefaults
+import androidx.compose.material.icons.outlined.TaskAlt
+import androidx.compose.material.icons.filled.TaskAlt
+import androidx.compose.material.icons.outlined.AutoStories
+import androidx.compose.material.icons.filled.AutoStories
+import com.forsakenblank.atlas.ui.insights.InsightsScreen
+import com.forsakenblank.atlas.ui.habits.HabitsScreen
+import com.forsakenblank.atlas.ui.journal.JournalScreen
 
 fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (section) {
     Section.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
@@ -146,6 +153,9 @@ fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (sectio
     Section.TRACK -> if (selected) Icons.Filled.Insights else Icons.Outlined.Insights
     Section.FOCUS -> if (selected) Icons.Filled.Timer else Icons.Outlined.Timer
     Section.TOOLS -> if (selected) Icons.Filled.Calculate else Icons.Outlined.Calculate
+    Section.JOURNAL -> if (selected) Icons.Filled.AutoStories else Icons.Outlined.AutoStories
+    Section.HABITS -> if (selected) Icons.Filled.TaskAlt else Icons.Outlined.TaskAlt
+    Section.INSIGHTS -> if (selected) Icons.Filled.Insights else Icons.Outlined.Insights
     Section.EXPLORER -> if (selected) Icons.Filled.FolderOpen else Icons.Outlined.FolderOpen
 }
 
@@ -351,6 +361,9 @@ private fun AtlasRootContent(wide: Boolean) {
                     composable(Section.MONEY.route) { Page { MoneyScreen(navigator) } }
                     composable(Routes.TAX) { Page { TaxScreen(navigator) } }
                     composable(Section.TRACK.route) { Page { TrackScreen(navigator) } }
+                    composable(Section.JOURNAL.route) { Page { JournalScreen(navigator) } }
+                    composable(Section.HABITS.route) { Page { HabitsScreen(navigator) } }
+                    composable(Section.INSIGHTS.route) { Page { InsightsScreen(navigator) } }
                     composable(Section.FOCUS.route) { Page { FocusScreen(navigator) } }
                     composable(Section.TOOLS.route) { Page { ToolsScreen(navigator) } }
                     composable(Section.EXPLORER.route) { Page { ExplorerScreen(navigator) } }

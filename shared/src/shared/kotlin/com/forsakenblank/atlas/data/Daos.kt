@@ -475,6 +475,9 @@ interface DayNoteDao {
     @Query("SELECT * FROM day_notes")
     fun all(): Flow<List<DayNote>>
 
+    @Query("SELECT * FROM day_notes WHERE day = :day")
+    suspend fun get(day: Long): DayNote?
+
     @Upsert
     suspend fun upsert(note: DayNote)
 
