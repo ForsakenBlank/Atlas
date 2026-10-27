@@ -140,6 +140,7 @@ import androidx.compose.material.icons.filled.AutoStories
 import com.forsakenblank.atlas.ui.insights.InsightsScreen
 import com.forsakenblank.atlas.ui.habits.HabitsScreen
 import com.forsakenblank.atlas.ui.journal.JournalScreen
+import com.forsakenblank.atlas.Launch
 
 fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (section) {
     Section.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
@@ -247,6 +248,23 @@ private fun AtlasRootContent(wide: Boolean) {
     val nav = rememberNavController()
     val navigator = remember(nav) { AtlasNavigator(nav) }
     val snackbar = remember { SnackbarHostState() }
+    // shortcuts, the widget and the quick settings tile land here
+    LaunchedEffect(Unit) {
+        app.launches.collect { launch ->
+            app.launches.resetReplayCache()
+            when (launch) {
+                Launch.NEW_NOTE -> navigator.openNote(app.repository.createNote(parentId = null))
+                Launch.TASKS -> navigator.openSection(Section.TASKS, isTab = false)
+                Launch.JOURNAL -> navigator.openSection(Section.JOURNAL, isTab = false)
+                Launch.HABITS -> navigator.openSection(Section.HABITS, isTab = false)
+                Launch.SYNC -> navigator.openSync()
+                Launch.FOCUS -> {
+                    navigator.openSection(Section.FOCUS, isTab = false)
+                    if (!app.focusTimer.state.value.running) app.focusTimer.start()
+                }
+            }
+        }
+    }
     // on the pc, escape and the mouse back button step back a page like the phone's back gesture
     if (platform().kind == DeviceKind.PC) BackHandler { navigator.back() }
     val backStack by nav.currentBackStackEntryAsState()

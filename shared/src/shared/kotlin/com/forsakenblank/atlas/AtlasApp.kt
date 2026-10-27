@@ -30,8 +30,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.ZoneId
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 val LocalAtlas = staticCompositionLocalOf<AtlasApp> { error("AtlasApp was not provided") }
+
+// a home screen shortcut, widget button or quick settings tile asking for somewhere in the app
+enum class Launch { NEW_NOTE, TASKS, FOCUS, JOURNAL, HABITS, SYNC }
 
 // one per running app, the phone and the pc each make theirs on start up
 class AtlasApp(
@@ -53,6 +57,9 @@ class AtlasApp(
 
     // wi-fi sync, made on first use so a phone that never syncs never opens a socket
     val sync by lazy { SyncManager(this) }
+
+    // kept until the app is on screen to act on it, then cleared
+    val launches = MutableSharedFlow<Launch>(replay = 1, extraBufferCapacity = 4)
 
     private val reminderLock = Mutex()
 

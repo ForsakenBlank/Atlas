@@ -6,4 +6,9 @@
     <color name="icon_mono_background">#FF111111</color>
     <color name="icon_purple_background">#FF5B3FA0</color>
     <color name="icon_forest_background">#FF23533A</color>
+    <!-- the home screen widget follows light and dark mode -->
+    <color name="widget_surface">#FFFBF1E1</color>
+    <color name="widget_text">#FF2B1A10</color>
+    <color name="widget_muted">#FF7A6555</color>
+    <color name="widget_button">#FFF2D9C2</color>
 </resources>

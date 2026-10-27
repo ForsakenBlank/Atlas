@@ -35,7 +35,12 @@ fun main() {
     platform.reminders.onNewDay = { app.rescheduleReminders() }
     app.start()
 
-    val saved = WindowMemory.load(dataDir)
+    // first time on a scaled hyprland monitor the interface and the window both start at the monitor's size
+    val firstScale = if (File(dataDir, "window.json").exists()) null else Hyprland.suggestedScale()
+    firstScale?.let { scale -> app.updateSettings { it.copy(uiScale = scale) } }
+    val saved = WindowMemory.load(dataDir).let { window ->
+        if (firstScale == null) window else window.copy(width = window.width * firstScale, height = window.height * firstScale)
+    }
 
     application {
         val state = rememberWindowState(

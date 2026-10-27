@@ -3,6 +3,7 @@ package com.forsakenblank.atlas
 import android.Manifest
 import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Build
@@ -27,6 +28,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val app = (application as AtlasApplication).atlas
+        // a rotation recreates the activity with the same intent, it was handled the first time
+        if (savedInstanceState == null) handle(intent)
         setContent {
             AtlasContent(app)
 
@@ -62,6 +65,34 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    companion object {
+        const val ACTION_NEW_NOTE = "com.forsakenblank.atlas.NEW_NOTE"
+        const val ACTION_TASKS = "com.forsakenblank.atlas.TASKS"
+        const val ACTION_FOCUS = "com.forsakenblank.atlas.FOCUS"
+        const val ACTION_JOURNAL = "com.forsakenblank.atlas.JOURNAL"
+        const val ACTION_HABITS = "com.forsakenblank.atlas.HABITS"
+        const val ACTION_SYNC = "com.forsakenblank.atlas.SYNC"
+    }
+}
+
+// shortcuts and widget buttons open atlas with one of these actions
+private fun MainActivity.handle(intent: Intent?) {
+    val launch = when (intent?.action) {
+        MainActivity.ACTION_NEW_NOTE -> Launch.NEW_NOTE
+        MainActivity.ACTION_TASKS -> Launch.TASKS
+        MainActivity.ACTION_FOCUS -> Launch.FOCUS
+        MainActivity.ACTION_JOURNAL -> Launch.JOURNAL
+        MainActivity.ACTION_HABITS -> Launch.HABITS
+        MainActivity.ACTION_SYNC -> Launch.SYNC
+        else -> return
+    }
+    (application as AtlasApplication).atlas.launches.tryEmit(launch)
 }
 
 // each icon is an activity alias in the manifest, only the chosen one stays enabled

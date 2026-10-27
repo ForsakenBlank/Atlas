@@ -113,6 +113,14 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material3.CircularProgressIndicator
+import com.forsakenblank.atlas.ui.journal.Mood
 
 data class TodayPlan(
     val day: LocalDate = LocalDate.now(),
@@ -129,6 +137,16 @@ class HomeViewModel(private val repo: AtlasRepository) : ViewModel() {
     val shortcuts = todaySummaries(repo)
         .map { list -> list.filter { it.tracker.showOnHome } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // today's journal entry, so the greeting can ask how the day is going
+    val todayNote = repo.dayNotes()
+        .map { notes -> notes.firstOrNull { it.day == LocalDate.now().toEpochDay() } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    fun setMood(mood: Int) = viewModelScope.launch {
+        val note = todayNote.value
+        repo.saveJournal(LocalDate.now().toEpochDay(), note?.text.orEmpty(), if (note?.mood == mood) null else mood)
+    }
 
     val pinnedNotes = repo.notes()
         .map { notes -> notes.filter { it.item.pinned }.take(6) }
@@ -194,6 +212,8 @@ fun HomeScreen(navigator: AtlasNavigator) {
     val plan by vm.today.collectAsStateWithLifecycle()
     val countdowns by vm.countdowns.collectAsStateWithLifecycle()
     val minute by vm.minute.collectAsStateWithLifecycle()
+    val todayNote by vm.todayNote.collectAsStateWithLifecycle()
+    val todayMood = todayNote?.mood
     val settings = LocalSettings.current
     val tap = rememberTrackerTap()
     val scope = rememberCoroutineScope()
@@ -228,7 +248,7 @@ fun HomeScreen(navigator: AtlasNavigator) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (settings.showGreeting) {
-                fullWidth { GreetingCard(settings.userName, shortcuts, plan) }
+                fullWidth { GreetingCard(settings.userName, shortcuts, plan, todayMood, vm::setMood) }
             }
 
             if (settings.showNowNext) {
@@ -450,7 +470,7 @@ private fun LazyGridScope.fullWidth(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun GreetingCard(name: String, shortcuts: List<TrackerSummary>, plan: TodayPlan) {
+private fun GreetingCard(name: String, shortcuts: List<TrackerSummary>, plan: TodayPlan, mood: Int?, onMood: (Int) -> Unit) {
     val hour = LocalTime.now().hour
     val greeting = when (hour) {
         in 5..11 -> "Good morning"
@@ -466,15 +486,48 @@ private fun GreetingCard(name: String, shortcuts: List<TrackerSummary>, plan: To
         if (events > 0) add("$events event${if (events == 1) "" else "s"}")
     }
     val summary = if (parts.isEmpty()) "A clear day so far." else parts.joinToString(", ").replaceFirstChar { it.uppercase() } + "."
+    val onCard = MaterialTheme.colorScheme.onPrimaryContainer
     AtlasCard(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.primaryContainer) {
         Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                plan.day.format(DateTimeFormatter.ofPattern("EEEE d MMMM")),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(greeting, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onPrimaryContainer)
-            Text(summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(plan.day.format(DateTimeFormatter.ofPattern("EEEE d MMMM")), style = MaterialTheme.typography.labelLarge, color = onCard)
+                    Text(greeting, style = MaterialTheme.typography.headlineSmall, color = onCard)
+                    Text(summary, style = MaterialTheme.typography.bodyMedium, color = onCard)
+                }
+                // how much of today's trackers is done, at a glance
+                if (shortcuts.isNotEmpty()) {
+                    val done = shortcuts.count { it.goalMet }
+                    Box(Modifier.padding(start = 12.dp).size(64.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator(
+                            progress = { done / shortcuts.size.toFloat() },
+                            modifier = Modifier.fillMaxSize(),
+                            color = MaterialTheme.colorScheme.primary,
+                            trackColor = onCard.copy(alpha = 0.15f),
+                            strokeWidth = 6.dp,
+                        )
+                        Text("$done/${shortcuts.size}", style = MaterialTheme.typography.labelLarge, color = onCard)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("How's today?", style = MaterialTheme.typography.labelLarge, color = onCard, modifier = Modifier.weight(1f))
+                Mood.entries.forEach { choice ->
+                    val picked = mood == choice.value
+                    Box(
+                        Modifier
+                            .padding(start = 4.dp)
+                            .size(38.dp)
+                            .clip(CircleShape)
+                            .background(if (picked) choice.color.copy(alpha = 0.35f) else Color.Transparent)
+                            .clickable { onMood(choice.value) },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(choice.face, fontSize = if (picked) 24.sp else 20.sp)
+                    }
+                }
+            }
         }
     }
 }

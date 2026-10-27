@@ -176,7 +176,7 @@ val AllSettings: List<Setting> = listOf(
     ),
     Setting.Range(
         SettingsCategory.APPEARANCE, "Interface size", "Makes everything bigger or more compact", "density compact zoom scale",
-        min = 0.8f, max = 1.25f, steps = 8, format = ::percent, get = { it.uiScale }, set = { s, v -> s.copy(uiScale = v) },
+        min = 0.8f, max = 2f, steps = 11, format = ::percent, get = { it.uiScale }, set = { s, v -> s.copy(uiScale = v) },
     ),
     Setting.Range(
         SettingsCategory.APPEARANCE, "Corner roundness", "From sharp corners to round pills", "shape radius rounded corners",
