@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import com.forsakenblank.atlas.ui.theme.AtlasTheme
 import com.forsakenblank.atlas.ui.theme.BuiltInThemes
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -146,6 +147,8 @@ data class AppSettings(
     val remindEvents: Boolean = true,
     val remindCountdowns: Boolean = true,
     val askedNotifications: Boolean = false,
+    // the address typed last time a sync connected, so it is filled in next time
+    val lastSyncAddress: String = "",
 
     // focus
     val focusMinutes: Int = 25,
@@ -211,6 +214,16 @@ class SettingsStore(private val dataStore: DataStore<Preferences>) {
         update { old ->
             if (keepThemes) AppSettings(customThemes = old.customThemes, onboarded = true) else AppSettings(onboarded = true)
         }
+    }
+
+    // names this install to other devices when syncing, kept out of the settings blob so it never travels
+    private val deviceIdKey = stringPreferencesKey("device_id")
+
+    suspend fun deviceId(): String {
+        dataStore.data.first()[deviceIdKey]?.let { return it }
+        var id = ""
+        dataStore.edit { prefs -> id = prefs[deviceIdKey] ?: java.util.UUID.randomUUID().toString().also { prefs[deviceIdKey] = it } }
+        return id
     }
 
     private fun decode(text: String): AppSettings? = runCatching { json.decodeFromString(AppSettings.serializer(), text) }.getOrNull()

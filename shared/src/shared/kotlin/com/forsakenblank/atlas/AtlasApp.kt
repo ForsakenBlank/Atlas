@@ -9,6 +9,7 @@ import com.forsakenblank.atlas.data.AtlasRepository
 import com.forsakenblank.atlas.data.BackupManager
 import com.forsakenblank.atlas.data.SettingsStore
 import com.forsakenblank.atlas.platform.Platform
+import com.forsakenblank.atlas.sync.SyncManager
 import com.forsakenblank.atlas.ui.focus.FocusTimer
 import com.forsakenblank.atlas.util.REMINDER_DAYS
 import com.forsakenblank.atlas.util.planReminders
@@ -49,6 +50,9 @@ class AtlasApp(
 
     // lives here so the timer keeps going when you leave the focus screen
     val focusTimer by lazy { FocusTimer(this) }
+
+    // wi-fi sync, made on first use so a phone that never syncs never opens a socket
+    val sync by lazy { SyncManager(this) }
 
     private val reminderLock = Mutex()
 

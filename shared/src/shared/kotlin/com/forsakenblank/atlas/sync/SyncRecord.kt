@@ -29,6 +29,20 @@ object Kind {
     const val THEME = "theme"
 
     val order = listOf(ACCOUNT, ITEM, SUBJECT, SLOT, TERM, LOG, EVENT, TASK, COUNTDOWN, ENTRY, QUICK, DAY_NOTE, THEME)
+
+    // fields that hold another row's uid, and which kind that row is
+    val links: Map<String, Map<String, String>> = mapOf(
+        ITEM to mapOf("parentId" to ITEM),
+        LOG to mapOf("trackerId" to ITEM),
+        TASK to mapOf("subjectId" to SUBJECT),
+        SUBJECT to mapOf("folderId" to ITEM),
+        SLOT to mapOf("subjectId" to SUBJECT),
+        ENTRY to mapOf("accountId" to ACCOUNT),
+        QUICK to mapOf("accountId" to ACCOUNT),
+    )
+
+    // a row can not be written without the one it points at
+    val required: Map<String, String> = mapOf(LOG to "trackerId", SLOT to "subjectId", ENTRY to "accountId", QUICK to "accountId")
 }
 
 // one row as every device sees it, ids pointing at other rows are swapped for their uids
