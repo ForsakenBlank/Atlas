@@ -27,6 +27,7 @@ object Routes {
     const val STARTER_PACKS = "starter-packs"
     const val TOOL = "tool/{id}"
     const val TAX = "tax"
+    const val SYNC = "sync"
     const val COUNTDOWN = "countdown/{id}?kind={kind}&countUp={countUp}&day={day}"
 }
 
@@ -46,6 +47,7 @@ class AtlasNavigator(private val nav: NavHostController) {
     fun openStarterPacks() = nav.navigate(Routes.STARTER_PACKS)
     fun openTool(id: String) = nav.navigate("tool/$id")
     fun openTax() = nav.navigate(Routes.TAX) { launchSingleTop = true }
+    fun openSync() = nav.navigate(Routes.SYNC) { launchSingleTop = true }
 
     // a new one can start as a birthday, an anniversary or a days since, on a given epoch day
     fun openCountdown(id: Long?, kind: CountdownKind? = null, countUp: Boolean = false, day: Long? = null) =

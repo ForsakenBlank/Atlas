@@ -32,7 +32,8 @@ data class Peer(val deviceId: String, val name: String, val kind: String)
 sealed interface ClientStep {
     data object Idle : ClientStep
     data class Working(val status: SyncStatus) : ClientStep
-    class Review(val peer: Peer, val plan: SyncPlan, val firstTime: Boolean) : ClientStep
+    // names holds what trackers, accounts and subjects are called, so changes to their rows can be labelled
+    class Review(val peer: Peer, val plan: SyncPlan, val firstTime: Boolean, val names: Map<String, String>) : ClientStep
     data class Done(val text: String) : ClientStep
     data class Failed(val text: String) : ClientStep
 }
@@ -158,7 +159,10 @@ class SyncManager(private val app: AtlasApp) {
             val plan = withContext(Dispatchers.Default) { SyncPlanner.plan(mine, theirs, base) }
             app.updateSettings { it.copy(lastSyncAddress = address.trim()) }
             session = Session(address, key, peer, plan)
-            _client.value = ClientStep.Review(peer, plan, firstTime = base.isEmpty())
+            val names = (theirs + mine)
+                .filter { it.kind == Kind.ITEM || it.kind == Kind.ACCOUNT || it.kind == Kind.SUBJECT }
+                .associate { it.uid to (it.text("name") ?: "") }
+            _client.value = ClientStep.Review(peer, plan, firstTime = base.isEmpty(), names = names)
         } catch (e: Exception) {
             _client.value = ClientStep.Failed(e.message ?: "Sync failed")
         }

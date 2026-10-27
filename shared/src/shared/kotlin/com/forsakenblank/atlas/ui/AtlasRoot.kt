@@ -121,6 +121,8 @@ import com.forsakenblank.atlas.platform.BackHandler
 import com.forsakenblank.atlas.platform.DeviceKind
 import com.forsakenblank.atlas.platform.platform
 import androidx.savedstate.read
+import androidx.compose.material.icons.outlined.Sync
+import com.forsakenblank.atlas.ui.sync.SyncScreen
 
 fun sectionIcon(section: Section, selected: Boolean): ImageVector = when (section) {
     Section.HOME -> if (selected) Icons.Filled.Home else Icons.Outlined.Home
@@ -284,6 +286,9 @@ fun AtlasRoot() {
                                     }
                                 }
                             }
+                            IconButton(onClick = navigator::openSync) {
+                                Icon(Icons.Outlined.Sync, contentDescription = "Sync")
+                            }
                             IconButton(onClick = navigator::openSearch) {
                                 Icon(Icons.Outlined.Search, contentDescription = "Search")
                             }
@@ -346,6 +351,7 @@ fun AtlasRoot() {
                     ThemeEditorScreen(entry.string("id") ?: "new", navigator)
                 }
                 composable(Routes.TRASH) { TrashScreen(navigator) }
+                composable(Routes.SYNC) { SyncScreen(navigator) }
                 composable(Routes.SEARCH) { SearchScreen(navigator) }
                 composable(
                     Routes.EVENT,

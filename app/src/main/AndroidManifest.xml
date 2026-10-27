@@ -6,6 +6,8 @@
     <!-- reminders for birthdays, tasks and events, set up again after a restart -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- wi-fi sync talks straight to your other devices on the local network, never to a server -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".AtlasApplication"

@@ -67,7 +67,7 @@ enum class SettingsCategory(val title: String, val blurb: String, val icon: Imag
 enum class SettingsAction {
     OPEN_THEMES, NEW_THEME, EDIT_TABS, BACKUP, RESTORE, STARTER_PACKS, EMPTY_TRASH,
     CLEAR_DONE_TASKS, RESET_SETTINGS, PICK_FOCUS_TRACKER, SUBJECTS, TERMS,
-    NOTIFICATION_SETTINGS, TEST_REMINDER,
+    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC,
 }
 
 sealed class Setting(
@@ -400,6 +400,7 @@ val AllSettings: List<Setting> = listOf(
     ),
 
     // data
+    Setting.Action(SettingsCategory.DATA, "Sync with another device", "Swap changes with your phone or PC over Wi-Fi", "sync wifi pc phone computer merge", SettingsAction.SYNC),
     Setting.Action(SettingsCategory.DATA, "Back up now", "Save everything to a file you choose", "backup export save", SettingsAction.BACKUP),
     Setting.Action(SettingsCategory.DATA, "Restore from backup", "Replaces what is in the app with a backup file", "restore import", SettingsAction.RESTORE),
     Setting.Action(SettingsCategory.DATA, "Starter packs", "Add ready made trackers and notes for study, fitness and more", "starter pack template", SettingsAction.STARTER_PACKS),

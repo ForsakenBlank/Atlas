@@ -33,7 +33,7 @@ class DesktopReminders(private val icon: File) : ReminderHost {
 
     override fun sendTest() = show("Test reminder", "Reminders are working. This is how they will look.")
 
-    @Synchronized
+    // AtlasApp only calls this while holding its reminder lock, so two plans never overlap
     override suspend fun schedule(planned: List<Reminder>, enabled: Boolean) {
         jobs.forEach { it.cancel() }
         if (!enabled) {

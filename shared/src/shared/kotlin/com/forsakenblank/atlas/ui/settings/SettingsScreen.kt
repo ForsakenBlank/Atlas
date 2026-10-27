@@ -422,6 +422,7 @@ fun rememberSettingsActions(navigator: AtlasNavigator): (SettingsAction) -> Unit
             SettingsAction.TERMS -> navigator.openTerms()
             SettingsAction.NOTIFICATION_SETTINGS -> platform.reminders.openSettings()
             SettingsAction.TEST_REMINDER -> testReminder()
+            SettingsAction.SYNC -> navigator.openSync()
             else -> dialog = action
         }
     }
