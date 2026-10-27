@@ -80,7 +80,12 @@ class SyncManager(private val app: AtlasApp) {
             handle = { request, _ -> answer(request) },
             onProgress = { fraction -> if (fraction != null && hostPhase.isNotEmpty()) _hostStatus.value = SyncStatus(hostPhase, fraction) },
         )
-        withContext(Dispatchers.IO) { started.start() }
+        try {
+            withContext(Dispatchers.IO) { started.start() }
+        } catch (e: java.io.IOException) {
+            _hostStatus.value = SyncStatus("Couldn't start hosting, port ${SyncWire.PORT} is busy. Is Luminescent or another copy of Atlas hosting on this computer?")
+            return
+        }
         server = started
         _host.value = HostInfo(code, SyncWire.localAddresses(), SyncWire.PORT)
         _hostStatus.value = SyncStatus("Waiting for a device…")

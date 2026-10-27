@@ -150,6 +150,9 @@ private fun HostCard(host: HostInfo?, status: SyncStatus?, deviceName: String, o
             trailingContent = { Switch(checked = host != null, onCheckedChange = onToggle) },
             colors = ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent),
         )
+        if (host == null && status != null) {
+            Text(status.text, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp))
+        }
         AnimatedVisibility(host != null) {
             val info = host ?: return@AnimatedVisibility
             Column(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
