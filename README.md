@@ -16,6 +16,11 @@
 
 </div>
 
+> [!WARNING]
+> **This app is vibe coded.** It was built mostly by chatting with an AI coding assistant, not written line by
+> line by an experienced developer. It works, but expect rough edges and bugs.
+> **Keep backups of your data:** Settings → Backup and data → **Back up now** saves everything to a file you can restore later.
+
 ---
 
 Atlas swaps a dozen separate apps for one. Notes, a journal, habits, time trackers, a calendar, your school timetable, tasks, countdowns, spreadsheets, money and a toolbox of calculators, all sharing one database so they can talk to each other. A tracker log shows up on the calendar, a task can belong to a subject, and Home pulls today's bits from everywhere.
