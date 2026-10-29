@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1
+
+* **Sync tells you why it can't connect**: no answer (the PC's firewall is probably blocking port 47830, with the
+  command to allow it), refused (Atlas isn't hosting there) or not an address.
+* When a Linux PC starts hosting with ufw or firewalld on, it shows the command to let the phone in.
+* The releases page only has real versions now.
+
 ## 1.0.0
 
 **On your phone tap `atlas.apk`. On Windows get the zip and run `Atlas.exe`. On Linux get the tar.gz, unpack it and run
