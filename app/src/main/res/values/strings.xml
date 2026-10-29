@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Atlas</string>
+
+    <!-- long press shortcuts on the app icon -->
+    <string name="shortcut_note">New note</string>
+    <string name="shortcut_task">Tasks</string>
+    <string name="shortcut_focus">Start focus</string>
+    <string name="shortcut_journal">Journal</string>
+
+    <string name="tile_focus">Focus</string>
+    <string name="widget_name">Atlas today</string>
+    <string name="widget_description">Today\'s tasks and habits, with buttons for a note, focus and the journal</string>
+</resources>

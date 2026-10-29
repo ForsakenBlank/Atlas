@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="note"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_note"
+        android:shortcutShortLabel="@string/shortcut_note">
+        <intent
+            android:action="com.forsakenblank.atlas.NEW_NOTE"
+            android:targetPackage="com.forsakenblank.atlas"
+            android:targetClass="com.forsakenblank.atlas.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="tasks"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_task"
+        android:shortcutShortLabel="@string/shortcut_task">
+        <intent
+            android:action="com.forsakenblank.atlas.TASKS"
+            android:targetPackage="com.forsakenblank.atlas"
+            android:targetClass="com.forsakenblank.atlas.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="focus"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_focus"
+        android:shortcutShortLabel="@string/shortcut_focus">
+        <intent
+            android:action="com.forsakenblank.atlas.FOCUS"
+            android:targetPackage="com.forsakenblank.atlas"
+            android:targetClass="com.forsakenblank.atlas.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="journal"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_journal"
+        android:shortcutShortLabel="@string/shortcut_journal">
+        <intent
+            android:action="com.forsakenblank.atlas.JOURNAL"
+            android:targetPackage="com.forsakenblank.atlas"
+            android:targetClass="com.forsakenblank.atlas.MainActivity" />
+    </shortcut>
+</shortcuts>

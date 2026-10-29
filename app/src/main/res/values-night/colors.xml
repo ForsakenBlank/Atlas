@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="atlas_background">#FF16130F</color>
+    <!-- the home screen widget follows light and dark mode -->
+    <color name="widget_surface">#FF241A14</color>
+    <color name="widget_text">#FFFBF1E1</color>
+    <color name="widget_muted">#FFC4B0A0</color>
+    <color name="widget_button">#FF3A2A20</color>
+</resources>

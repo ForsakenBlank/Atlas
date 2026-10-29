@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- pen and drawn line for the forest icon, inside the 66dp safe zone -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- the line the pen has just drawn -->
+    <path
+        android:pathData="M34,71 C41,63 47,79 55,71 S69,63 76,71"
+        android:strokeColor="#FFA8D08D"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000" />
+    <!-- the pen is drawn upright and tipped over to 45 degrees -->
+    <group
+        android:pivotX="54"
+        android:pivotY="48"
+        android:rotation="45"
+        android:translateX="-2.4"
+        android:translateY="6.4">
+        <path
+            android:fillColor="#FFE9F1DF"
+            android:pathData="M48,30 Q48,24 54,24 Q60,24 60,30 L60,58 L48,58 Z" />
+        <path
+            android:fillColor="#FF5E7F4A"
+            android:pathData="M48,33 L60,33 L60,36.5 L48,36.5 Z" />
+        <path
+            android:fillColor="#FFE9F1DF"
+            android:pathData="M48,59.5 L60,59.5 L54,71 Z" />
+        <path
+            android:fillColor="#FF5E7F4A"
+            android:pathData="M51.5,65.8 L56.5,65.8 L54,71 Z" />
+    </group>
+</vector>
