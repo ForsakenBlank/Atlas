@@ -184,6 +184,8 @@ class SyncServer(
     private val onLockedOut: () -> Unit,
     private val handle: suspend (request: JsonObject, progress: (Float) -> Unit) -> JsonObject,
     private val onProgress: (Float?) -> Unit,
+    // tests pass 0 for any free port, a fixed one can be taken on a busy machine
+    private val port: Int = SyncWire.PORT,
 ) {
     private var socket: ServerSocket? = null
     private var job: Job? = null
@@ -192,7 +194,7 @@ class SyncServer(
     fun start() {
         val server = ServerSocket()
         server.reuseAddress = true
-        server.bind(InetSocketAddress(SyncWire.PORT))
+        server.bind(InetSocketAddress(port))
         socket = server
         job = scope.launch(Dispatchers.IO) {
             while (isActive) {
@@ -207,6 +209,9 @@ class SyncServer(
             }
         }
     }
+
+    // the port it ended up on
+    val boundPort: Int get() = socket?.localPort ?: port
 
     fun stop() {
         runCatching { socket?.close() }

@@ -62,7 +62,7 @@ class SyncEndToEndTest {
 
     private suspend fun syncFrom(phone: AtlasApp, pc: AtlasApp) {
         val code = pc.sync.host.value!!.code
-        phone.sync.connect("127.0.0.1", code)
+        phone.sync.connect("127.0.0.1:${pc.sync.host.value!!.port}", code)
         val review = phone.sync.client.value
         assertTrue("expected a review, got $review", review is ClientStep.Review)
         phone.sync.run(emptyMap())
@@ -82,7 +82,7 @@ class SyncEndToEndTest {
         phone.repository.logDuration(onPhone, 2_000, 300)
         phone.repository.createNote(null, "Shopping")
 
-        pc.sync.startHosting()
+        pc.sync.startHosting(port = 0)
         syncFrom(phone, pc)
 
         assertEquals(1, pc.trackers().size)
@@ -135,7 +135,7 @@ class SyncEndToEndTest {
         r.saveDayNote(20_000, "A good day")
         r.saveJournal(20_001, "Tired", 2)
 
-        pc.sync.startHosting()
+        pc.sync.startHosting(port = 0)
         syncFrom(phone, pc)
         assertTrue("host status: ${pc.sync.hostStatus.value}", pc.sync.hostStatus.value?.text.orEmpty().startsWith("Synced with"))
 
@@ -154,10 +154,10 @@ class SyncEndToEndTest {
     fun aWrongCodeIsTurnedAway() = runBlocking {
         val pc = device("pc", DeviceKind.PC)
         val phone = device("phone", DeviceKind.PHONE)
-        pc.sync.startHosting()
+        pc.sync.startHosting(port = 0)
         val wrong = ((pc.sync.host.value!!.code.toInt() + 1) % 1_000_000).toString().padStart(6, '0')
 
-        phone.sync.connect("127.0.0.1", wrong)
+        phone.sync.connect("127.0.0.1:${pc.sync.host.value!!.port}", wrong)
 
         val step = phone.sync.client.value
         assertTrue("expected a failure, got $step", step is ClientStep.Failed && step.text == "Wrong code")
