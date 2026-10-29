@@ -65,7 +65,6 @@ Updating never touches your data. The PC version keeps it in `%LOCALAPPDATA%\Atl
 `~/.local/share/atlas` (Linux); phone builds are all signed with the same key, so a new version installs over the old
 one.
 
-> Want to try something still being worked on? Every branch gets its own pre-release named **Atlas build from &lt;branch&gt;**.
 
 ## Features
 
