@@ -67,7 +67,7 @@ enum class SettingsCategory(val title: String, val blurb: String, val icon: Imag
 enum class SettingsAction {
     OPEN_THEMES, NEW_THEME, EDIT_TABS, BACKUP, RESTORE, STARTER_PACKS, EMPTY_TRASH,
     CLEAR_DONE_TASKS, RESET_SETTINGS, PICK_FOCUS_TRACKER, SUBJECTS, TERMS,
-    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC,
+    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC, CAELESTIA_LOOK,
 }
 
 sealed class Setting(
@@ -147,8 +147,13 @@ private val sectionToggles = Section.entries.filter { it != Section.HOME }.map {
 
 val AllSettings: List<Setting> = listOf(
     // appearance
-    Setting.Action(SettingsCategory.APPEARANCE, "Themes", "Pick from 17 built in themes or your own", "colour color theme palette dark light", SettingsAction.OPEN_THEMES),
+    Setting.Action(SettingsCategory.APPEARANCE, "Themes", "Pick from 25 built in themes or your own", "colour color theme palette dark light", SettingsAction.OPEN_THEMES),
     Setting.Action(SettingsCategory.APPEARANCE, "Create a theme", "Build your own theme with the colour picker", "custom colour color creator editor", SettingsAction.NEW_THEME),
+    Setting.Action(SettingsCategory.APPEARANCE, "Caelestia look", "One tap: the Caelestia theme, glass cards, round corners, a floating bar and smooth push transitions", "caelestia preset style glass round modern minimal", SettingsAction.CAELESTIA_LOOK),
+    Setting.Toggle(
+        SettingsCategory.APPEARANCE, "Follow Luminescent's theme", "After a sync with Luminescent, Atlas switches to the theme Luminescent is using", "luminescent pc sync theme match",
+        get = { it.followLuminescent }, set = { s, v -> s.copy(followLuminescent = v) },
+    ),
     Setting.Choice(
         SettingsCategory.APPEARANCE, "Light or dark", "Which mode Atlas uses", "dark mode night light system",
         options = ThemeMode.entries, label = { it.name.lowercase().replaceFirstChar(Char::uppercase).replace("System", "Follow the system") },

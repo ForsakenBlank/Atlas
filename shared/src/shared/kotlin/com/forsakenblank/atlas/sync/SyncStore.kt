@@ -1,5 +1,7 @@
 package com.forsakenblank.atlas.sync
 
+import com.forsakenblank.atlas.data.ThemeMode
+
 import com.forsakenblank.atlas.data.AtlasDatabase
 import com.forsakenblank.atlas.data.AtlasRepository
 import com.forsakenblank.atlas.data.Countdown
@@ -151,7 +153,14 @@ class SyncStore(
             val incoming = themes.mapNotNull { runCatching { json.decodeFromJsonElement(AtlasTheme.serializer(), it.fields) }.getOrNull() }
             settings.update { s ->
                 val kept = s.customThemes.filter { it.id !in themeDeletes && incoming.none { new -> new.id == it.id } }
-                s.copy(customThemes = kept + incoming)
+                val next = s.copy(customThemes = kept + incoming)
+                // Luminescent sends the theme it is using under one fixed id
+                val lum = incoming.firstOrNull { it.id == LUMINESCENT_THEME }
+                when {
+                    lum == null || !s.followLuminescent -> next
+                    lum.dark -> next.copy(darkThemeId = lum.id, themeMode = ThemeMode.DARK)
+                    else -> next.copy(lightThemeId = lum.id, themeMode = ThemeMode.LIGHT)
+                }
             }
         }
     }
@@ -275,3 +284,6 @@ class SyncStore(
 // a row both devices made separately, the "from" uid is renamed to "to" before anything is written
 @kotlinx.serialization.Serializable
 data class Relink(val kind: String, val from: String, val to: String)
+
+// the id Luminescent's current theme travels under
+const val LUMINESCENT_THEME = "luminescent-current"

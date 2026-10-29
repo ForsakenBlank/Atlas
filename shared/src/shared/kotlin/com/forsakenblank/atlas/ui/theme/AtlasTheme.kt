@@ -249,6 +249,55 @@ object BuiltInThemes {
             primary = c(0xFF9C6B30), secondary = c(0xFF5E8C61), accent = c(0xFF3F6E8C),
             text = c(0xFF2A2118), mutedText = c(0xFF7A6A58), border = c(0xFFD9C8AE), danger = c(0xFFB3261E),
         ),
+        // the same ones Luminescent has, so both can look alike
+        AtlasTheme(
+            "caelestia", "Caelestia", true,
+            background = c(0xFF141218), surface = c(0xFF141218), card = c(0xFF211F26),
+            primary = c(0xFFCBA6F7), secondary = c(0xFFCCC2DC), accent = c(0xFFEFB8C8),
+            text = c(0xFFE6E0E9), mutedText = c(0xFFCAC4D0), border = c(0xFF36343B), danger = c(0xFFF2B8B5),
+        ),
+        AtlasTheme(
+            "catppuccin-mocha", "Catppuccin Mocha", true,
+            background = c(0xFF1E1E2E), surface = c(0xFF1E1E2E), card = c(0xFF313244),
+            primary = c(0xFFCBA6F7), secondary = c(0xFF94E2D5), accent = c(0xFFF5C2E7),
+            text = c(0xFFCDD6F4), mutedText = c(0xFFA6ADC8), border = c(0xFF45475A), danger = c(0xFFF38BA8),
+        ),
+        AtlasTheme(
+            "catppuccin-latte", "Catppuccin Latte", false,
+            background = c(0xFFEFF1F5), surface = c(0xFFEFF1F5), card = c(0xFFE6E9EF),
+            primary = c(0xFF8839EF), secondary = c(0xFF179299), accent = c(0xFFEA76CB),
+            text = c(0xFF4C4F69), mutedText = c(0xFF6C6F85), border = c(0xFFCCD0DA), danger = c(0xFFD20F39),
+        ),
+        AtlasTheme(
+            "tokyo-night", "Tokyo Night", true,
+            background = c(0xFF1A1B26), surface = c(0xFF1A1B26), card = c(0xFF24283B),
+            primary = c(0xFF7AA2F7), secondary = c(0xFF7DCFFF), accent = c(0xFFBB9AF7),
+            text = c(0xFFC0CAF5), mutedText = c(0xFFA9B1D6), border = c(0xFF3B4261), danger = c(0xFFF7768E),
+        ),
+        AtlasTheme(
+            "gruvbox", "Gruvbox", true,
+            background = c(0xFF282828), surface = c(0xFF282828), card = c(0xFF3C3836),
+            primary = c(0xFFFE8019), secondary = c(0xFFB8BB26), accent = c(0xFF83A598),
+            text = c(0xFFEBDBB2), mutedText = c(0xFFBDAE93), border = c(0xFF504945), danger = c(0xFFFB4934),
+        ),
+        AtlasTheme(
+            "rose-pine", "Rosé Pine", true,
+            background = c(0xFF191724), surface = c(0xFF191724), card = c(0xFF26233A),
+            primary = c(0xFFEBBCBA), secondary = c(0xFF9CCFD8), accent = c(0xFFC4A7E7),
+            text = c(0xFFE0DEF4), mutedText = c(0xFF908CAA), border = c(0xFF403D52), danger = c(0xFFEB6F92),
+        ),
+        AtlasTheme(
+            "everforest", "Everforest", true,
+            background = c(0xFF2D353B), surface = c(0xFF2D353B), card = c(0xFF343F44),
+            primary = c(0xFFA7C080), secondary = c(0xFF83C092), accent = c(0xFFDBBC7F),
+            text = c(0xFFD3C6AA), mutedText = c(0xFF9DA9A0), border = c(0xFF475258), danger = c(0xFFE67E80),
+        ),
+        AtlasTheme(
+            "material-you", "Material You", true,
+            background = c(0xFF1C1B1F), surface = c(0xFF1C1B1F), card = c(0xFF2B2930),
+            primary = c(0xFFD0BCFF), secondary = c(0xFFCCC2DC), accent = c(0xFFEFB8C8),
+            text = c(0xFFE6E1E5), mutedText = c(0xFFCAC4D0), border = c(0xFF49454F), danger = c(0xFFF2B8B5),
+        ),
     )
 
     fun find(id: String): AtlasTheme? = all.firstOrNull { it.id == id }

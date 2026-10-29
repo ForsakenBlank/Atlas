@@ -26,7 +26,7 @@ enum class Transition(val label: String) {
 
 enum class FontChoice(val label: String) { DEFAULT("Default"), SANS("Sans"), SERIF("Serif"), MONO("Monospace"), CURSIVE("Handwritten") }
 
-enum class CardStyle(val label: String) { FILLED("Filled"), OUTLINED("Outlined"), ELEVATED("Raised") }
+enum class CardStyle(val label: String) { FILLED("Filled"), OUTLINED("Outlined"), ELEVATED("Raised"), GLASS("Glass") }
 
 enum class BarLabels(val label: String) { ALWAYS("Always"), SELECTED("Selected tab only"), NEVER("Never") }
 
@@ -61,6 +61,8 @@ data class AppSettings(
     val lightThemeId: String = BuiltInThemes.DEFAULT_LIGHT,
     val darkThemeId: String = BuiltInThemes.DEFAULT_DARK,
     val customThemes: List<AtlasTheme> = emptyList(),
+    // a sync with Luminescent switches to the theme Luminescent is using
+    val followLuminescent: Boolean = false,
     val dynamicColor: Boolean = false,
     val pureBlack: Boolean = false,
     val cornerRadius: Int = 16,

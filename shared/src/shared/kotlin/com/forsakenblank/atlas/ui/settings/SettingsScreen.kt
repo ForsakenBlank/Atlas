@@ -50,6 +50,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.forsakenblank.atlas.ATLAS_VERSION
 import com.forsakenblank.atlas.data.AppSettings
+import com.forsakenblank.atlas.data.CardStyle
+import com.forsakenblank.atlas.data.ThemeMode
+import com.forsakenblank.atlas.data.Transition
 import com.forsakenblank.atlas.data.TrackerKind
 import com.forsakenblank.atlas.platform.platform
 import com.forsakenblank.atlas.ui.AtlasNavigator
@@ -423,6 +426,16 @@ fun rememberSettingsActions(navigator: AtlasNavigator): (SettingsAction) -> Unit
             SettingsAction.NOTIFICATION_SETTINGS -> platform.reminders.openSettings()
             SettingsAction.TEST_REMINDER -> testReminder()
             SettingsAction.SYNC -> navigator.openSync()
+            SettingsAction.CAELESTIA_LOOK -> scope.launch {
+                app.settingsStore.update {
+                    it.copy(
+                        darkThemeId = "caelestia", themeMode = ThemeMode.DARK, cardStyle = CardStyle.GLASS,
+                        cornerRadius = 24, floatingBar = true, screenTransition = Transition.SHARED_AXIS,
+                        tabTransition = Transition.FADE, boldHeadings = false,
+                    )
+                }
+                snackbar.showSnackbar("Caelestia look on. Change any part of it below.")
+            }
             else -> dialog = action
         }
     }
