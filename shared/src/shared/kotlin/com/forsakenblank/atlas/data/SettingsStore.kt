@@ -28,6 +28,14 @@ enum class FontChoice(val label: String) { DEFAULT("Default"), SANS("Sans"), SER
 
 enum class CardStyle(val label: String) { FILLED("Filled"), OUTLINED("Outlined"), ELEVATED("Raised"), GLASS("Glass") }
 
+enum class IconStyle(val label: String, val pkg: String) {
+    OUTLINED("Outlined (thin lines)", "outlined"),
+    ROUNDED("Rounded (soft and filled)", "rounded"),
+    SHARP("Sharp (square corners)", "sharp"),
+    FILLED("Filled", "filled"),
+    TWO_TONE("Two tone", "twotone"),
+}
+
 enum class BarLabels(val label: String) { ALWAYS("Always"), SELECTED("Selected tab only"), NEVER("Never") }
 
 enum class ShortcutSize(val label: String, val minWidth: Int) { SMALL("Small", 110), NORMAL("Normal", 156), LARGE("Large", 220) }
@@ -71,6 +79,7 @@ data class AppSettings(
     val font: FontChoice = FontChoice.DEFAULT,
     val boldHeadings: Boolean = false,
     val cardStyle: CardStyle = CardStyle.FILLED,
+    val iconStyle: IconStyle = IconStyle.OUTLINED,
     val appIcon: AppIcon = AppIcon.ORANGE,
 
     // navigation

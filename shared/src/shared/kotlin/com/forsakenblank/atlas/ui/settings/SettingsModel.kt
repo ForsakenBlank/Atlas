@@ -192,6 +192,10 @@ val AllSettings: List<Setting> = listOf(
         options = CardStyle.entries, label = { it.label }, get = { it.cardStyle }, set = { s, v -> s.copy(cardStyle = v) },
     ),
     Setting.Choice(
+        SettingsCategory.APPEARANCE, "Icon style", "How the icons across Atlas are drawn", "icons symbols outlined rounded sharp filled minimal",
+        options = IconStyle.entries, label = { it.label }, get = { it.iconStyle }, set = { s, v -> s.copy(iconStyle = v) },
+    ),
+    Setting.Choice(
         SettingsCategory.APPEARANCE, "App icon", "The icon on your home screen. Your launcher may take a moment to update", "launcher icon logo",
         options = AppIcon.entries, label = { it.label }, get = { it.appIcon }, set = { s, v -> s.copy(appIcon = v) },
     ),
