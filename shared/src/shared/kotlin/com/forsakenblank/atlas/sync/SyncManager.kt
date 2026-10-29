@@ -88,7 +88,8 @@ class SyncManager(private val app: AtlasApp) {
         }
         server = started
         _host.value = HostInfo(code, SyncWire.localAddresses(), SyncWire.PORT)
-        _hostStatus.value = SyncStatus("Waiting for a device…")
+        val hint = withContext(Dispatchers.IO) { SyncWire.firewallHint() }
+        _hostStatus.value = SyncStatus(if (hint != null) "Waiting for a device… $hint" else "Waiting for a device…")
     }
 
     fun stopHosting() {
