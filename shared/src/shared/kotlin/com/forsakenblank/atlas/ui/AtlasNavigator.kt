@@ -56,6 +56,12 @@ class AtlasNavigator(private val nav: NavHostController) {
     // tabs keep their own back stacks, other sections open on top like a page
     fun openSection(section: Section, isTab: Boolean) {
         if (isTab) {
+            // the first tab sits under every other page, so going to it is stepping back down to it.
+            // navigating to it would save the page on top under the first tab and restore it straight away
+            if (nav.graph.findStartDestination().route == section.route) {
+                nav.popBackStack(section.route, inclusive = false, saveState = true)
+                return
+            }
             nav.navigate(section.route) {
                 popUpTo(nav.graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true
