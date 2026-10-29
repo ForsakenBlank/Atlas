@@ -66,7 +66,7 @@ class SyncManager(private val app: AtlasApp) {
 
     // hosting
 
-    suspend fun startHosting() {
+    suspend fun startHosting(port: Int = SyncWire.PORT) {
         if (server != null) return
         val code = SyncWire.newCode()
         val key = withContext(Dispatchers.Default) { SyncKey(code) }
@@ -79,6 +79,7 @@ class SyncManager(private val app: AtlasApp) {
             },
             handle = { request, _ -> answerOrExplain(request) },
             onProgress = { fraction -> if (fraction != null && hostPhase.isNotEmpty()) _hostStatus.value = SyncStatus(hostPhase, fraction) },
+            port = port,
         )
         try {
             withContext(Dispatchers.IO) { started.start() }
@@ -87,7 +88,7 @@ class SyncManager(private val app: AtlasApp) {
             return
         }
         server = started
-        _host.value = HostInfo(code, SyncWire.localAddresses(), SyncWire.PORT)
+        _host.value = HostInfo(code, SyncWire.localAddresses(), started.boundPort)
         val hint = withContext(Dispatchers.IO) { SyncWire.firewallHint() }
         _hostStatus.value = SyncStatus(if (hint != null) "Waiting for a device… $hint" else "Waiting for a device…")
     }
