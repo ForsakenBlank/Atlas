@@ -22,7 +22,14 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK
-        run: ./gradlew :app:assembleDebug
+        run: |
+          set -o pipefail
+          ./gradlew :app:assembleDebug 2>&1 | tee build.log
+
+      # compile errors as annotations, so they show on the run's summary page
+      - name: Show compile errors
+        if: failure()
+        run: grep -E "^e: " build.log | head -40 | sed 's/^e: /::error::/' || true
 
       - name: Name the APK
         run: cp app/build/outputs/apk/debug/app-debug.apk atlas.apk
