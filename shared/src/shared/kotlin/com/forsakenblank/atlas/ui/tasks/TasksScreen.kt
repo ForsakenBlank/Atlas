@@ -33,7 +33,7 @@ import androidx.compose.material.icons.outlined.Repeat
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
+import com.forsakenblank.atlas.ui.common.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults

@@ -18,11 +18,11 @@ import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.forsakenblank.atlas.data.AppIcon
 import com.forsakenblank.atlas.data.AppSettings
 import com.forsakenblank.atlas.data.BarLabels
 import com.forsakenblank.atlas.data.CalendarView
 import com.forsakenblank.atlas.data.CardStyle
+import com.forsakenblank.atlas.data.IconStyle
 import com.forsakenblank.atlas.data.ExplorerSort
 import com.forsakenblank.atlas.data.FontChoice
 import com.forsakenblank.atlas.data.LongPress
@@ -67,7 +67,7 @@ enum class SettingsCategory(val title: String, val blurb: String, val icon: Imag
 enum class SettingsAction {
     OPEN_THEMES, NEW_THEME, EDIT_TABS, BACKUP, RESTORE, STARTER_PACKS, EMPTY_TRASH,
     CLEAR_DONE_TASKS, RESET_SETTINGS, PICK_FOCUS_TRACKER, SUBJECTS, TERMS,
-    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC,
+    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC, CAELESTIA_LOOK, APP_ICON,
 }
 
 sealed class Setting(
@@ -147,8 +147,13 @@ private val sectionToggles = Section.entries.filter { it != Section.HOME }.map {
 
 val AllSettings: List<Setting> = listOf(
     // appearance
-    Setting.Action(SettingsCategory.APPEARANCE, "Themes", "Pick from 17 built in themes or your own", "colour color theme palette dark light", SettingsAction.OPEN_THEMES),
+    Setting.Action(SettingsCategory.APPEARANCE, "Themes", "Pick from 25 built in themes or your own", "colour color theme palette dark light", SettingsAction.OPEN_THEMES),
     Setting.Action(SettingsCategory.APPEARANCE, "Create a theme", "Build your own theme with the colour picker", "custom colour color creator editor", SettingsAction.NEW_THEME),
+    Setting.Action(SettingsCategory.APPEARANCE, "Caelestia look", "One tap: the Caelestia theme, glass cards, round corners, a floating bar and smooth push transitions", "caelestia preset style glass round modern minimal", SettingsAction.CAELESTIA_LOOK),
+    Setting.Toggle(
+        SettingsCategory.APPEARANCE, "Follow Luminescent's theme", "After a sync with Luminescent, Atlas switches to the theme Luminescent is using", "luminescent pc sync theme match",
+        get = { it.followLuminescent }, set = { s, v -> s.copy(followLuminescent = v) },
+    ),
     Setting.Choice(
         SettingsCategory.APPEARANCE, "Light or dark", "Which mode Atlas uses", "dark mode night light system",
         options = ThemeMode.entries, label = { it.name.lowercase().replaceFirstChar(Char::uppercase).replace("System", "Follow the system") },
@@ -187,9 +192,10 @@ val AllSettings: List<Setting> = listOf(
         options = CardStyle.entries, label = { it.label }, get = { it.cardStyle }, set = { s, v -> s.copy(cardStyle = v) },
     ),
     Setting.Choice(
-        SettingsCategory.APPEARANCE, "App icon", "The icon on your home screen. Your launcher may take a moment to update", "launcher icon logo",
-        options = AppIcon.entries, label = { it.label }, get = { it.appIcon }, set = { s, v -> s.copy(appIcon = v) },
+        SettingsCategory.APPEARANCE, "Icon style", "How the icons across Atlas are drawn", "icons symbols outlined rounded sharp filled minimal",
+        options = IconStyle.entries, label = { it.label }, get = { it.iconStyle }, set = { s, v -> s.copy(iconStyle = v) },
     ),
+    Setting.Action(SettingsCategory.APPEARANCE, "App icon", "Pick the colours of the Atlas icon on your home screen or taskbar", "launcher icon logo colour", SettingsAction.APP_ICON),
 
     // motion
     Setting.Choice(
@@ -408,7 +414,7 @@ val AllSettings: List<Setting> = listOf(
 )
 
 // these only mean something on a phone, the pc version leaves them out
-private val PhoneOnly = setOf("Wallpaper colours", "App icon", "Hide in recent apps", "Haptics", "Keep the screen on")
+private val PhoneOnly = setOf("Wallpaper colours", "Hide in recent apps", "Haptics", "Keep the screen on")
 
 @Composable
 fun visibleSettings(): List<Setting> {

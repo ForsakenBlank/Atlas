@@ -26,7 +26,15 @@ enum class Transition(val label: String) {
 
 enum class FontChoice(val label: String) { DEFAULT("Default"), SANS("Sans"), SERIF("Serif"), MONO("Monospace"), CURSIVE("Handwritten") }
 
-enum class CardStyle(val label: String) { FILLED("Filled"), OUTLINED("Outlined"), ELEVATED("Raised") }
+enum class CardStyle(val label: String) { FILLED("Filled"), OUTLINED("Outlined"), ELEVATED("Raised"), GLASS("Glass") }
+
+enum class IconStyle(val label: String, val pkg: String) {
+    OUTLINED("Outlined (thin lines)", "outlined"),
+    ROUNDED("Rounded (soft and filled)", "rounded"),
+    SHARP("Sharp (square corners)", "sharp"),
+    FILLED("Filled", "filled"),
+    TWO_TONE("Two tone", "twotone"),
+}
 
 enum class BarLabels(val label: String) { ALWAYS("Always"), SELECTED("Selected tab only"), NEVER("Never") }
 
@@ -46,12 +54,11 @@ enum class TaskSort(val label: String) { DUE("Due date"), PRIORITY("Priority"), 
 
 enum class CalendarView(val label: String) { MONTH("Month"), WEEK("Week"), AGENDA("Agenda") }
 
-enum class AppIcon(val label: String, val alias: String) {
-    ORANGE("Orange and cream", "IconOrange"),
-    NAVY("Navy and mint", "IconNavy"),
-    MONO("Black and white", "IconMono"),
-    PURPLE("Purple and pink", "IconPurple"),
-    FOREST("Forest green", "IconForest"),
+enum class AppIcon(val label: String, val alias: String, val file: String) {
+    DARK("Dark", "IconDark", "dark"),
+    INK("Ink blue", "IconInk", "ink"),
+    LIGHT("Light", "IconLight", "light"),
+    SAND("Sand", "IconSand", "sand"),
 }
 
 @Serializable
@@ -61,6 +68,8 @@ data class AppSettings(
     val lightThemeId: String = BuiltInThemes.DEFAULT_LIGHT,
     val darkThemeId: String = BuiltInThemes.DEFAULT_DARK,
     val customThemes: List<AtlasTheme> = emptyList(),
+    // a sync with Luminescent switches to the theme Luminescent is using
+    val followLuminescent: Boolean = false,
     val dynamicColor: Boolean = false,
     val pureBlack: Boolean = false,
     val cornerRadius: Int = 16,
@@ -69,7 +78,8 @@ data class AppSettings(
     val font: FontChoice = FontChoice.DEFAULT,
     val boldHeadings: Boolean = false,
     val cardStyle: CardStyle = CardStyle.FILLED,
-    val appIcon: AppIcon = AppIcon.ORANGE,
+    val iconStyle: IconStyle = IconStyle.OUTLINED,
+    val appIcon: AppIcon = AppIcon.DARK,
 
     // navigation
     val tabs: List<Section> = Section.defaultTabs,

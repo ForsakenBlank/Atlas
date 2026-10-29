@@ -103,9 +103,9 @@ fun applyAppIcon(context: Context, icon: AppIcon) {
         val component = ComponentName(context.packageName, "$prefix.${option.alias}")
         val wanted = if (option == icon) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         val now = pm.getComponentEnabledSetting(component)
-        // the manifest default only has the orange icon switched on
+        // the manifest default only has the dark icon switched on
         val effective = if (now == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT) {
-            if (option == AppIcon.ORANGE) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            if (option == AppIcon.DARK) PackageManager.COMPONENT_ENABLED_STATE_ENABLED else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
         } else {
             now
         }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- route icon, light colours -->
+<!-- the route design on its 1024 canvas, scaled into the 72dp an icon shows (viewport 1536 = 108dp) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="1536"
+    android:viewportHeight="1536">
+    <group
+        android:translateX="256"
+        android:translateY="256">
+        <path
+            android:pathData="M300,728 L512,300 L724,728"
+            android:strokeColor="#FF1B1E2B"
+            android:strokeWidth="66"
+            android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:fillColor="#00000000" />
+        <path
+            android:pathData="M464,600 a48,48 0 1,0 96,0 a48,48 0 1,0 -96,0"
+            android:fillColor="#FF3A5BD9" />
+    </group>
+</vector>

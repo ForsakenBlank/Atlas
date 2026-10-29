@@ -22,7 +22,7 @@ import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
+import com.forsakenblank.atlas.ui.common.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -50,6 +50,9 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.forsakenblank.atlas.ATLAS_VERSION
 import com.forsakenblank.atlas.data.AppSettings
+import com.forsakenblank.atlas.data.CardStyle
+import com.forsakenblank.atlas.data.ThemeMode
+import com.forsakenblank.atlas.data.Transition
 import com.forsakenblank.atlas.data.TrackerKind
 import com.forsakenblank.atlas.platform.platform
 import com.forsakenblank.atlas.ui.AtlasNavigator
@@ -398,6 +401,10 @@ fun rememberSettingsActions(navigator: AtlasNavigator): (SettingsAction) -> Unit
                 snackbar.showSnackbar("Finished tasks cleared")
             }
         }
+        SettingsAction.APP_ICON -> AppIconDialog(
+            current = LocalSettings.current.appIcon,
+            onDismiss = { dialog = null },
+        ) { icon -> scope.launch { app.settingsStore.update { it.copy(appIcon = icon) } } }
         SettingsAction.RESET_SETTINGS -> ConfirmDialog(
             title = "Reset all settings?",
             body = "Every setting goes back to its default. Your notes, trackers and your own themes stay.",
@@ -423,6 +430,16 @@ fun rememberSettingsActions(navigator: AtlasNavigator): (SettingsAction) -> Unit
             SettingsAction.NOTIFICATION_SETTINGS -> platform.reminders.openSettings()
             SettingsAction.TEST_REMINDER -> testReminder()
             SettingsAction.SYNC -> navigator.openSync()
+            SettingsAction.CAELESTIA_LOOK -> scope.launch {
+                app.settingsStore.update {
+                    it.copy(
+                        darkThemeId = "caelestia", themeMode = ThemeMode.DARK, cardStyle = CardStyle.GLASS,
+                        cornerRadius = 24, floatingBar = true, screenTransition = Transition.SHARED_AXIS,
+                        tabTransition = Transition.FADE, boldHeadings = false,
+                    )
+                }
+                snackbar.showSnackbar("Caelestia look on. Change any part of it below.")
+            }
             else -> dialog = action
         }
     }

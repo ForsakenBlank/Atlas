@@ -1,5 +1,6 @@
 package com.forsakenblank.atlas.ui.common
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,7 +32,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
@@ -124,6 +124,13 @@ fun AtlasCard(
         CardStyle.ELEVATED -> ElevatedCard(
             modifier = modifier.then(clicks),
             colors = CardDefaults.elevatedCardColors(containerColor = container),
+            content = content,
+        )
+        // see-through like Caelestia's panels, with a thin light edge
+        CardStyle.GLASS -> OutlinedCard(
+            modifier = modifier.then(clicks),
+            colors = CardDefaults.outlinedCardColors(containerColor = container.copy(alpha = 0.55f)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)),
             content = content,
         )
     }

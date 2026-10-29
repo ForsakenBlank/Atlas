@@ -1,5 +1,7 @@
 package com.forsakenblank.atlas.desktop
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -48,6 +50,10 @@ fun main() {
             position = if (saved.x != null && saved.y != null) WindowPosition(saved.x.dp, saved.y.dp) else WindowPosition.PlatformDefault,
         )
 
+        // the app icon setting picks the colours of the window and taskbar icon
+        val settings by app.settings.collectAsState()
+        val iconFile = "atlas-${settings?.appIcon?.file ?: "dark"}.png"
+
         Window(
             onCloseRequest = {
                 WindowMemory.save(dataDir, state)
@@ -55,7 +61,7 @@ fun main() {
             },
             state = state,
             title = "Atlas",
-            icon = painterResource("atlas.png"),
+            icon = painterResource(iconFile),
             // escape and the mouse back button work like the phone's back gesture
             onPreviewKeyEvent = { event ->
                 event.type == KeyEventType.KeyDown && event.key == Key.Escape && platform.back.handle()
