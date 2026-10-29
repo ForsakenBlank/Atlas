@@ -77,7 +77,7 @@ class SyncManager(private val app: AtlasApp) {
                 stopHosting()
                 _hostStatus.value = SyncStatus("Too many wrong codes, hosting stopped. Turn it on again for a new code.")
             },
-            handle = { request, _ -> answer(request) },
+            handle = { request, _ -> answerOrExplain(request) },
             onProgress = { fraction -> if (fraction != null && hostPhase.isNotEmpty()) _hostStatus.value = SyncStatus(hostPhase, fraction) },
         )
         try {
@@ -98,6 +98,27 @@ class SyncManager(private val app: AtlasApp) {
         _host.value = null
         hostPhase = ""
         _hostStatus.value = null
+    }
+
+    // a request that fails shows why on this device too, instead of staying on the step it was on,
+    // and the other device gets a sentence rather than a bare database error
+    private suspend fun answerOrExplain(request: JsonObject): JsonObject = try {
+        answer(request)
+    } catch (e: SyncException) {
+        hostPhase = ""
+        _hostStatus.value = SyncStatus(e.message.orEmpty())
+        throw e
+    } catch (e: Exception) {
+        val me = app.platform.kind.label
+        val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
+        val why = if (request.str("action") == "apply") {
+            "The $me couldn't save what the ${request.str("name") ?: "other device"} sent ($detail). Nothing was changed on the $me."
+        } else {
+            "The $me couldn't get its things ready to send ($detail)."
+        }
+        hostPhase = ""
+        _hostStatus.value = SyncStatus(why)
+        throw SyncException(why)
     }
 
     private suspend fun answer(request: JsonObject): JsonObject {
