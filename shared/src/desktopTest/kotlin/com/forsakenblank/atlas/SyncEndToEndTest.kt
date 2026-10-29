@@ -2,7 +2,19 @@ package com.forsakenblank.atlas
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import com.forsakenblank.atlas.data.Countdown
+import com.forsakenblank.atlas.data.CountdownKind
+import com.forsakenblank.atlas.data.Event
 import com.forsakenblank.atlas.data.ItemType
+import com.forsakenblank.atlas.data.MoneyAccount
+import com.forsakenblank.atlas.data.MoneyEntry
+import com.forsakenblank.atlas.data.MoneyQuick
+import com.forsakenblank.atlas.data.Repeat
+import com.forsakenblank.atlas.data.StarterPacks
+import com.forsakenblank.atlas.data.Subject
+import com.forsakenblank.atlas.data.Task
+import com.forsakenblank.atlas.data.Term
+import com.forsakenblank.atlas.data.TimetableSlot
 import com.forsakenblank.atlas.data.TrackerKind
 import com.forsakenblank.atlas.platform.DeviceKind
 import com.forsakenblank.atlas.platform.FileReader
@@ -89,6 +101,53 @@ class SyncEndToEndTest {
         assertEquals(1020L, pc.secondsLogged())
         assertEquals(1020L, phone.secondsLogged())
         assertTrue(phone.notes().isEmpty())
+    }
+
+    @Test
+    fun aFullPhoneSyncsToANewPc() = runBlocking {
+        val pc = device("pc", DeviceKind.PC)
+        val phone = device("phone", DeviceKind.PHONE)
+        val r = phone.repository
+
+        // one of everything a phone that has been used for a while would have
+        StarterPacks.forEach { r.addStarterPack(it) }
+        val school = r.createFolder("School", null)
+        val maths = r.createFolder("Maths", school)
+        val note = r.createNote(maths, "Homework")
+        r.saveNote(note, "Homework", "Page 12 #maths #school")
+        val sheet = r.createSheet(school, "Grades")
+        val reading = r.createTracker("Reading", TrackerKind.TIMER, school, null, 30, null, true)
+        r.logDuration(reading, 1_000, 600)
+        val water = r.createTracker("Water", TrackerKind.NUMBER, null, null, 8, "glasses", true)
+        r.logValue(water, 3.0, "morning")
+        r.saveSubject(Subject(name = "Physics", teacher = "Ms Lee"), makeFolder = true)
+        val physics = phone.database.timetable().allSubjects().first { it.name == "Physics" }
+        r.saveSlot(TimetableSlot(subjectId = physics.id, dayOfWeek = 1, startMinute = 540, endMinute = 600))
+        r.saveTask(Task(title = "Lab report", subjectId = physics.id, due = 20_000))
+        r.saveTerm(Term(name = "Autumn", startDay = 20_000, endDay = 20_090))
+        r.saveEvent(Event(title = "Dentist", startsAt = 1_800_000_000_000, endsAt = 1_800_000_360_000, repeatRule = Repeat.YEARLY))
+        r.saveCountdown(Countdown(title = "Birthday", date = 10_000, kind = CountdownKind.BIRTHDAY, yearly = true))
+        val bank = r.saveMoneyAccount(MoneyAccount(name = "Bank", openingPence = 10_000))
+        val cash = r.saveMoneyAccount(MoneyAccount(name = "Cash"))
+        r.saveMoneyEntry(MoneyEntry(accountId = bank, day = 20_000, amountPence = -450, category = "Food"))
+        r.moneyTransfer(bank, cash, 20_001, 2_000, "cash out")
+        r.saveMoneyQuick(MoneyQuick(accountId = cash, name = "Coffee", amountPence = -300))
+        r.saveDayNote(20_000, "A good day")
+        r.saveJournal(20_001, "Tired", 2)
+
+        pc.sync.startHosting()
+        syncFrom(phone, pc)
+        assertTrue("host status: ${pc.sync.hostStatus.value}", pc.sync.hostStatus.value?.text.orEmpty().startsWith("Synced with"))
+
+        suspend fun AtlasApp.counts() = repository.snapshot().let {
+            listOf(it.items.size, it.notes.size, it.sheets.size, it.trackers.size, it.logs.size, it.events.size, it.tasks.size, it.subjects.size,
+                it.slots.size, it.terms.size, it.countdowns.size, it.moneyAccounts.size, it.moneyEntries.size, it.moneyQuick.size, it.dayNotes.size)
+        }
+        assertEquals(phone.counts(), pc.counts())
+
+        // and a second time with nothing new
+        syncFrom(phone, pc)
+        assertEquals(phone.counts(), pc.counts())
     }
 
     @Test
