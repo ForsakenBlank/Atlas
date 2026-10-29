@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+* **Sync says what went wrong**: when one device can't save what the other sent, both now show the reason instead
+  of a bare "Error code", and the PC no longer stays stuck on "Saving what phone sent".
+* **Fix**: the Home button works again when Sync, Settings or another page is open on top of Home.
+
 ## 1.0.1
 
 * **Sync tells you why it can't connect**: no answer (the PC's firewall is probably blocking port 47830, with the
