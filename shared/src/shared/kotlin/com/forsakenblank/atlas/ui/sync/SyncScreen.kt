@@ -195,7 +195,7 @@ private fun ConnectCard(step: ClientStep, onConnect: (String, String) -> Unit, o
                 value = address,
                 onValueChange = { address = it.trim() },
                 label = { Text("Address") },
-                placeholder = { Text("192.168.1.20") },
+                placeholder = { Text("The address the other device shows") },
                 singleLine = true,
                 enabled = !busy,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),

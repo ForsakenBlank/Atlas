@@ -5,7 +5,7 @@
 **One app for your notes, trackers, money, plans and everything in between. On your phone and your PC.**
 
 [![Build](https://github.com/ForsakenBlank/Atlas/actions/workflows/build.yml/badge.svg)](https://github.com/ForsakenBlank/Atlas/actions/workflows/build.yml)
-![Version](https://img.shields.io/badge/version-0.6.0-blue)
+![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%2B-0078D4?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-Hyprland%20ready-FCC624?logo=linux&logoColor=black)
