@@ -57,6 +57,20 @@ object SyncWire {
             .distinct()
     }.getOrDefault(emptyList())
 
+    // a linux pc with ufw or firewalld switched on drops incoming connections unless the port is allowed,
+    // which looks exactly like the other device not being there. android has no such firewall
+    fun firewallHint(): String? = runCatching {
+        if (!System.getProperty("os.name").orEmpty().contains("Linux") || System.getProperty("java.vm.name").orEmpty().contains("Dalvik")) {
+            return@runCatching null
+        }
+        fun active(unit: String) = ProcessBuilder("systemctl", "is-active", "--quiet", unit).start().waitFor() == 0
+        when {
+            active("ufw") -> "Your firewall (ufw) is on. If the other device can't connect, run: sudo ufw allow $PORT/tcp"
+            active("firewalld") -> "Your firewall (firewalld) is on. If the other device can't connect, run: sudo firewall-cmd --permanent --add-port=$PORT/tcp && sudo firewall-cmd --reload"
+            else -> null
+        }
+    }.getOrNull()
+
     fun write(out: OutputStream, type: Byte, body: ByteArray, onProgress: (Float) -> Unit = {}) {
         val data = DataOutputStream(out.buffered(64 * 1024))
         data.write(MAGIC)
@@ -112,8 +126,20 @@ object SyncWire {
                 json.parseToJsonElement(text.decodeToString()).jsonObject
             } catch (e: SyncException) {
                 throw e
+            } catch (e: java.net.ConnectException) {
+                // something answered at that address, but nothing is listening for atlas
+                throw SyncException("$host is there, but Atlas isn't hosting on it. Turn on Let another device connect on that device (or check the address).")
+            } catch (e: java.net.SocketTimeoutException) {
+                // no answer at all: a firewall on the host drops it, or the address is on another network
+                throw SyncException(
+                    "No answer from $host. If it's a PC, its firewall is probably blocking Atlas: allow port $PORT " +
+                        "(on Linux: sudo ufw allow $PORT/tcp, or sudo firewall-cmd --permanent --add-port=$PORT/tcp then sudo firewall-cmd --reload). " +
+                        "Also check both are on the same Wi-Fi and not a guest network.",
+                )
+            } catch (e: java.net.UnknownHostException) {
+                throw SyncException("\"$host\" isn't an address. Type the numbers the other device shows, like the ones under Let another device connect.")
             } catch (e: Exception) {
-                throw SyncException("Couldn't reach $host. Check the address and that both are on the same Wi-Fi.")
+                throw SyncException("Couldn't reach $host (${e.javaClass.simpleName}: ${e.message}). Check the address and that both are on the same Wi-Fi.")
             } finally {
                 runCatching { socket.close() }
             }

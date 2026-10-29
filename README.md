@@ -56,6 +56,10 @@ Get the newest version from the [**Releases**](https://github.com/ForsakenBlank/
 
 On Hyprland the window class is `atlas`, for window rules.
 
+**Syncing with your phone?** If the phone can't reach the PC, the PC's firewall is blocking Atlas (CachyOS and some
+other distros turn one on by default). Allow its port once: `sudo ufw allow 47830/tcp` (ufw), or
+`sudo firewall-cmd --permanent --add-port=47830/tcp && sudo firewall-cmd --reload` (firewalld).
+
 ### Your data
 Updating never touches your data. The PC version keeps it in `%LOCALAPPDATA%\Atlas` (Windows) and
 `~/.local/share/atlas` (Linux); phone builds are all signed with the same key, so a new version installs over the old
