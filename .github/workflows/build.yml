@@ -8,6 +8,10 @@ on:
         description: "Publish a version release (v + atlas.versionName, notes from CHANGELOG.md)"
         type: boolean
         default: false
+      cleanup:
+        description: "Delete every release that is not a version (old branch builds and 'latest build')"
+        type: boolean
+        default: false
 
 concurrency:
   group: build-${{ github.ref }}
@@ -101,9 +105,11 @@ jobs:
 
   # every branch gets a release page so the builds can be installed straight from a phone or pc,
   # artifact downloads need a github login and come out as a zip
+  # only a version release goes on the releases page; every other build stays a downloadable artifact on its
+  # run, so the page (and the in-app updater) only ever sees real versions
   publish:
     needs: [android, desktop]
-    if: ${{ !cancelled() && needs.android.result == 'success' }}
+    if: ${{ !cancelled() && needs.android.result == 'success' && inputs.release }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -117,7 +123,6 @@ jobs:
 
       # Actions -> Build -> Run workflow with "Publish a version release" ticked
       - name: Publish the version
-        if: ${{ inputs.release }}
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
@@ -130,26 +135,21 @@ jobs:
           gh release create "v$version" "${files[@]}" --target "$GITHUB_SHA" --title "Atlas $version" \
             --notes-file notes.md --latest
 
-      - name: Publish the build
-        if: ${{ !inputs.release }}
+  # Actions -> Build -> Run workflow with "Delete every release that is not a version" ticked
+  cleanup:
+    if: ${{ inputs.cleanup }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Delete the branch builds
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ "$REF_NAME" = "main" ]; then
-            tag=latest
-            title="Atlas latest build"
-          else
-            tag="build-$(echo "$REF_NAME" | tr '/' '-')"
-            title="Atlas build from $REF_NAME"
-          fi
-          # a pc build that failed is just left off the page
-          shopt -s nullglob
-          files=(atlas.apk Atlas-*)
-          gh release delete "$tag" --yes --cleanup-tag || true
-          gh release create "$tag" "${files[@]}" \
-            --target "$GITHUB_SHA" \
-            --title "$title" \
-            --notes "Built from ${GITHUB_SHA::7}. On your phone tap atlas.apk. On Windows get the zip and run Atlas.exe. On Linux get the tar.gz, unpack it and run Atlas/bin/Atlas, or run install.sh inside it to add Atlas to your app launcher." \
-            --prerelease
+          gh release list --limit 200 --json tagName --jq '.[].tagName' | while read -r tag; do
+            case "$tag" in
+              v[0-9]*) echo "keeping $tag" ;;
+              *) echo "deleting $tag"; gh release delete "$tag" --yes --cleanup-tag ;;
+            esac
+          done
