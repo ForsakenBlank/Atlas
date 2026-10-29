@@ -82,7 +82,7 @@ Phone builds are all signed with the same key, so a new version installs over th
 - **Icon style**: outlined, rounded, sharp, filled or two tone icons everywhere
 - **Card style**: filled, outlined, raised or glass
 - **Around 95 settings** across 15 categories, all searchable
-- **Five app icons**, page and tab transitions, and a bottom bar you choose the tabs for
+- **A new app icon in four colours** (Dark, Ink, Light, Sand) picked in Settings, page and tab transitions, and a bottom bar you choose the tabs for
 - **Starter packs** (study, fitness, wellbeing, habits, work, money) so a fresh install is not a blank page
 - **Backups** to a single file you can restore on any device
 
