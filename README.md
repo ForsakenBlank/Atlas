@@ -5,7 +5,7 @@
 **One app for your notes, trackers, money, plans and everything in between. On your phone and your PC.**
 
 [![Build](https://github.com/ForsakenBlank/Atlas/actions/workflows/build.yml/badge.svg)](https://github.com/ForsakenBlank/Atlas/actions/workflows/build.yml)
-![Version](https://img.shields.io/badge/version-0.5.0-blue)
+![Version](https://img.shields.io/badge/version-0.6.0-blue)
 ![Android](https://img.shields.io/badge/Android-8.0%2B-3DDC84?logo=android&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%2B-0078D4?logo=windows&logoColor=white)
 ![Linux](https://img.shields.io/badge/Linux-Hyprland%20ready-FCC624?logo=linux&logoColor=black)
@@ -77,8 +77,11 @@ Phone builds are all signed with the same key, so a new version installs over th
 
 ### Make it yours
 
-- **17 built in themes** and a theme creator with a full colour picker
-- **Around 90 settings** across 15 categories, all searchable
+- **25 built in themes** (Caelestia, Catppuccin, Tokyo Night, Gruvbox, Rosé Pine, Everforest, Material You and more) and a theme creator with a full colour picker
+- **Caelestia look** in one tap: glass cards, round corners, a floating bar and smooth push transitions
+- **Icon style**: outlined, rounded, sharp, filled or two tone icons everywhere
+- **Card style**: filled, outlined, raised or glass
+- **Around 95 settings** across 15 categories, all searchable
 - **Five app icons**, page and tab transitions, and a bottom bar you choose the tabs for
 - **Starter packs** (study, fitness, wellbeing, habits, work, money) so a fresh install is not a blank page
 - **Backups** to a single file you can restore on any device
@@ -100,7 +103,7 @@ What makes it nice to use:
 - **Any device can host**, so phone to phone and PC to PC work too.
 - Everything sent is **locked with the code** (AES-GCM), and ten wrong codes stop hosting.
 
-[Luminescent](https://github.com/ForsakenBlank/Luminescent) can sync with Atlas too. Its notes and timer time show up on your phone.
+[Luminescent](https://github.com/ForsakenBlank/Luminescent) can sync with Atlas too. Its notes and timer time show up on your phone, your Atlas events and tasks show up on its Calendar page with notifications on the PC, and themes go both ways. Turn on **Settings → Appearance → Follow Luminescent's theme** and Atlas switches to whatever theme Luminescent is using after every sync.
 
 ## Linux and Hyprland
 
