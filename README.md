@@ -12,7 +12,7 @@
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.2-7F52FF?logo=kotlin&logoColor=white)
 ![Compose Multiplatform](https://img.shields.io/badge/Compose-Multiplatform-4285F4?logo=jetpackcompose&logoColor=white)
 
-[Download](#download) · [Features](#features) · [Sync](#wi-fi-sync) · [Linux and Hyprland](#linux-and-hyprland) · [Building](#building-it-yourself)
+[Download](#download-and-install) · [Features](#features) · [Sync](#wi-fi-sync) · [Linux and Hyprland](#linux-and-hyprland) · [Building](#building-it-yourself)
 
 </div>
 
@@ -27,19 +27,41 @@ Atlas swaps a dozen separate apps for one. Notes, a journal, habits, time tracke
 
 The same app runs on **Android**, **Windows** and **Linux**, and your devices sync straight to each other over Wi-Fi. There are no accounts, no ads and no cloud.
 
-## Download
+## Download and install
 
-Everything is on the [**Releases**](https://github.com/ForsakenBlank/Atlas/releases) page under **Atlas latest build**.
+Get the newest version from the [**Releases**](https://github.com/ForsakenBlank/Atlas/releases/latest) page. Under
+**Assets** at the bottom, download the file for your device.
 
-| Device | File | How to install |
-|---|---|---|
-| Android | `atlas.apk` | Open it on your phone and allow "Install unknown apps" the first time |
-| Windows | `Atlas-windows-x64.zip` | Unzip anywhere and run `Atlas.exe` |
-| Linux | `Atlas-linux-x64.tar.gz` | Unpack it and run `Atlas/bin/Atlas`, or run `Atlas/install.sh` to add it to your app launcher |
+### Android
+1. Download `atlas.apk` on your phone.
+2. Open it. The first time, Android asks you to allow installing apps from your browser or file manager: allow it.
+3. Tap **Install**. To update later, install the new `atlas.apk` over the old one; your data stays.
 
-Phone builds are all signed with the same key, so a new version installs over the old one and keeps your data. The PC version keeps its data in `~/.local/share/atlas` on Linux and `%LOCALAPPDATA%\Atlas` on Windows, so replacing the program never touches it.
+### Windows
+1. Download `Atlas-windows-x64.zip`.
+2. Right-click it → **Extract All…** and pick a folder (for example `Documents\Atlas`).
+3. Open the folder and double-click `Atlas.exe`. If Windows SmartScreen warns you, press **More info** → **Run anyway**.
+4. Want it in the Start menu? Right-click `Atlas.exe` → **Show more options** → **Pin to Start**.
 
-> Want to try something still being worked on? Every branch gets its own release named **Atlas build from &lt;branch&gt;**.
+### Linux
+1. Download `Atlas-linux-x64.tar.gz`.
+2. Unpack it and add it to your app launcher:
+   ```
+   tar -xzf Atlas-linux-x64.tar.gz
+   ./Atlas/install.sh
+   ```
+3. Atlas is now in your launcher (rofi, wofi, fuzzel, walker…) and `atlas` starts it from a terminal. To try it without
+   installing, run `./Atlas/bin/Atlas` instead.
+4. To update, unpack the new version and run its `install.sh` again.
+
+On Hyprland the window class is `atlas`, for window rules.
+
+### Your data
+Updating never touches your data. The PC version keeps it in `%LOCALAPPDATA%\Atlas` (Windows) and
+`~/.local/share/atlas` (Linux); phone builds are all signed with the same key, so a new version installs over the old
+one.
+
+> Want to try something still being worked on? Every branch gets its own pre-release named **Atlas build from &lt;branch&gt;**.
 
 ## Features
 

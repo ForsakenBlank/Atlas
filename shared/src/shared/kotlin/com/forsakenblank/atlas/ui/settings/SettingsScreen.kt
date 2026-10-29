@@ -173,24 +173,13 @@ private fun AboutBlock() {
     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text("Atlas ${ATLAS_VERSION}", style = MaterialTheme.typography.titleLarge)
         Text(
-            "One app for notes, tracking, planning and everything in between. Everything stays on this phone.",
+            "One app for notes, tracking, planning and everything in between. Everything stays on your own devices.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Text("New in this version", style = MaterialTheme.typography.titleMedium)
-        listOf(
-            "Sheets: spreadsheets with formulas like =SUM(A1:A5)",
-            "Countdowns for birthdays, anniversaries and big dates, shown on Home",
-            "Reminders for birthdays, tasks due today and upcoming events",
-            "Search everything from the top bar",
-            "Hold to select shortcuts, trackers and notes, then remove them in one go",
-            "Swipe a task right to tick it off or left to delete it",
-            "Repeating tasks and yearly events show on every date they repeat",
-            "Add events or tasks straight from any day in the calendar",
-            "Share or copy a note",
-        ).forEach { Text("• $it", style = MaterialTheme.typography.bodyMedium) }
     }
+    UpdatesBlock()
 }
 
 @Composable

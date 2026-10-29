@@ -7,6 +7,10 @@
 
 New since the last build:
 
+* **Updates inside Atlas**: Settings → About lists every version with what changed and a button to Update,
+  Reinstall or Downgrade. On the PC it downloads the new version, swaps it in and restarts. On the phone it downloads
+  the APK and opens Android's installer (Android can not go back to an older version without uninstalling, so the
+  list explains how). A few seconds after opening, Atlas also tells you when a new version is out.
 * **New app icon**: the route design in Dark, Ink, Light and Sand. Settings → Appearance → App icon shows all four;
   on the phone it changes the home screen icon, on the PC the window and taskbar icon.
 * **Icon style**: outlined, rounded, sharp, filled or two tone icons across the whole app (Settings → Appearance).
