@@ -54,12 +54,11 @@ enum class TaskSort(val label: String) { DUE("Due date"), PRIORITY("Priority"), 
 
 enum class CalendarView(val label: String) { MONTH("Month"), WEEK("Week"), AGENDA("Agenda") }
 
-enum class AppIcon(val label: String, val alias: String) {
-    ORANGE("Orange and cream", "IconOrange"),
-    NAVY("Navy and mint", "IconNavy"),
-    MONO("Black and white", "IconMono"),
-    PURPLE("Purple and pink", "IconPurple"),
-    FOREST("Forest green", "IconForest"),
+enum class AppIcon(val label: String, val alias: String, val file: String) {
+    DARK("Dark", "IconDark", "dark"),
+    INK("Ink blue", "IconInk", "ink"),
+    LIGHT("Light", "IconLight", "light"),
+    SAND("Sand", "IconSand", "sand"),
 }
 
 @Serializable
@@ -80,7 +79,7 @@ data class AppSettings(
     val boldHeadings: Boolean = false,
     val cardStyle: CardStyle = CardStyle.FILLED,
     val iconStyle: IconStyle = IconStyle.OUTLINED,
-    val appIcon: AppIcon = AppIcon.ORANGE,
+    val appIcon: AppIcon = AppIcon.DARK,
 
     // navigation
     val tabs: List<Section> = Section.defaultTabs,

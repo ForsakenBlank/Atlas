@@ -401,6 +401,10 @@ fun rememberSettingsActions(navigator: AtlasNavigator): (SettingsAction) -> Unit
                 snackbar.showSnackbar("Finished tasks cleared")
             }
         }
+        SettingsAction.APP_ICON -> AppIconDialog(
+            current = LocalSettings.current.appIcon,
+            onDismiss = { dialog = null },
+        ) { icon -> scope.launch { app.settingsStore.update { it.copy(appIcon = icon) } } }
         SettingsAction.RESET_SETTINGS -> ConfirmDialog(
             title = "Reset all settings?",
             body = "Every setting goes back to its default. Your notes, trackers and your own themes stay.",

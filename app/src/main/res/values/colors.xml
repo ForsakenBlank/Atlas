@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="icon_dark_background">#FF121318</color>
+    <color name="icon_ink_background">#FF2B44C8</color>
+    <color name="icon_light_background">#FFF6F5F1</color>
+    <color name="icon_sand_background">#FFE9E1D3</color>
     <color name="atlas_background">#FFFBF7F2</color>
-    <color name="icon_orange_background">#FFD9692B</color>
-    <color name="icon_navy_background">#FF1F3A5F</color>
-    <color name="icon_mono_background">#FF111111</color>
-    <color name="icon_purple_background">#FF5B3FA0</color>
-    <color name="icon_forest_background">#FF23533A</color>
     <!-- the home screen widget follows light and dark mode -->
     <color name="widget_surface">#FFFBF1E1</color>
     <color name="widget_text">#FF2B1A10</color>

@@ -18,7 +18,6 @@ import androidx.compose.material.icons.outlined.SaveAlt
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.ui.graphics.vector.ImageVector
-import com.forsakenblank.atlas.data.AppIcon
 import com.forsakenblank.atlas.data.AppSettings
 import com.forsakenblank.atlas.data.BarLabels
 import com.forsakenblank.atlas.data.CalendarView
@@ -67,7 +66,7 @@ enum class SettingsCategory(val title: String, val blurb: String, val icon: Imag
 enum class SettingsAction {
     OPEN_THEMES, NEW_THEME, EDIT_TABS, BACKUP, RESTORE, STARTER_PACKS, EMPTY_TRASH,
     CLEAR_DONE_TASKS, RESET_SETTINGS, PICK_FOCUS_TRACKER, SUBJECTS, TERMS,
-    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC, CAELESTIA_LOOK,
+    NOTIFICATION_SETTINGS, TEST_REMINDER, SYNC, CAELESTIA_LOOK, APP_ICON,
 }
 
 sealed class Setting(
@@ -195,10 +194,7 @@ val AllSettings: List<Setting> = listOf(
         SettingsCategory.APPEARANCE, "Icon style", "How the icons across Atlas are drawn", "icons symbols outlined rounded sharp filled minimal",
         options = IconStyle.entries, label = { it.label }, get = { it.iconStyle }, set = { s, v -> s.copy(iconStyle = v) },
     ),
-    Setting.Choice(
-        SettingsCategory.APPEARANCE, "App icon", "The icon on your home screen. Your launcher may take a moment to update", "launcher icon logo",
-        options = AppIcon.entries, label = { it.label }, get = { it.appIcon }, set = { s, v -> s.copy(appIcon = v) },
-    ),
+    Setting.Action(SettingsCategory.APPEARANCE, "App icon", "Pick the colours of the Atlas icon on your home screen or taskbar", "launcher icon logo colour", SettingsAction.APP_ICON),
 
     // motion
     Setting.Choice(
@@ -417,7 +413,7 @@ val AllSettings: List<Setting> = listOf(
 )
 
 // these only mean something on a phone, the pc version leaves them out
-private val PhoneOnly = setOf("Wallpaper colours", "App icon", "Hide in recent apps", "Haptics", "Keep the screen on")
+private val PhoneOnly = setOf("Wallpaper colours", "Hide in recent apps", "Haptics", "Keep the screen on")
 
 @Composable
 fun visibleSettings(): List<Setting> {
