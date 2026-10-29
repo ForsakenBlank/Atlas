@@ -22,6 +22,7 @@ import com.forsakenblank.atlas.data.AppSettings
 import com.forsakenblank.atlas.data.BarLabels
 import com.forsakenblank.atlas.data.CalendarView
 import com.forsakenblank.atlas.data.CardStyle
+import com.forsakenblank.atlas.data.IconStyle
 import com.forsakenblank.atlas.data.ExplorerSort
 import com.forsakenblank.atlas.data.FontChoice
 import com.forsakenblank.atlas.data.LongPress
