@@ -37,6 +37,8 @@ class DesktopPlatform(dataDir: File) : Platform {
 
     override val reminders = DesktopReminders(File(dataDir, "atlas.png").also { copyIcon(it) })
 
+    override val updater = DesktopUpdater(dataDir)
+
     val back = BackDispatcher()
 
     private val io = CoroutineScope(Dispatchers.IO)

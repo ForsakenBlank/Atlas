@@ -1,5 +1,8 @@
 package com.forsakenblank.atlas.ui
 
+import com.forsakenblank.atlas.update.Releases
+import com.forsakenblank.atlas.ATLAS_VERSION
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -104,6 +107,7 @@ import com.forsakenblank.atlas.ui.sheets.SheetEditorScreen
 import com.forsakenblank.atlas.ui.sheets.SheetsScreen
 import com.forsakenblank.atlas.ui.onboarding.StarterPacksScreen
 import com.forsakenblank.atlas.ui.search.SearchScreen
+import com.forsakenblank.atlas.ui.settings.SettingsCategory
 import com.forsakenblank.atlas.ui.settings.SettingsCategoryScreen
 import com.forsakenblank.atlas.ui.settings.SettingsScreen
 import com.forsakenblank.atlas.ui.settings.ThemeEditorScreen
@@ -263,6 +267,17 @@ private fun AtlasRootContent(wide: Boolean) {
                     if (!app.focusTimer.state.value.running) app.focusTimer.start()
                 }
             }
+        }
+    }
+    // a few seconds after opening, one look for a newer version, with a way straight to it
+    val updater = platform().updater
+    LaunchedEffect(Unit) {
+        if (updater == null) return@LaunchedEffect
+        delay(4000)
+        val newest = runCatching { Releases.fetch().firstOrNull() }.getOrNull() ?: return@LaunchedEffect
+        if (Releases.newer(newest.version, ATLAS_VERSION)) {
+            val result = snackbar.showSnackbar("Atlas ${newest.version} is out", actionLabel = "Update", withDismissAction = true)
+            if (result == SnackbarResult.ActionPerformed) navigator.openSettingsCategory(SettingsCategory.ABOUT)
         }
     }
     // on the pc, escape and the mouse back button step back a page like the phone's back gesture

@@ -54,6 +54,8 @@ class AndroidPlatform(private val app: AtlasApplication) : Platform {
 
     override val reminders: ReminderHost = AndroidReminders(app)
 
+    override val updater = AndroidUpdater(app)
+
     @Composable
     override fun wallpaperColours(dark: Boolean): ColorScheme? {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return null

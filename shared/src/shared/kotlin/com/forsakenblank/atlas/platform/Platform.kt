@@ -2,6 +2,7 @@ package com.forsakenblank.atlas.platform
 
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
+import com.forsakenblank.atlas.update.Updater
 import com.forsakenblank.atlas.util.Reminder
 
 enum class DeviceKind(val label: String) { PHONE("Phone"), PC("PC") }
@@ -29,6 +30,9 @@ interface Platform {
     fun share(subject: String?, text: String): String?
 
     val reminders: ReminderHost
+
+    // downloads and installs other versions, null where atlas can not update itself
+    val updater: Updater? get() = null
 
     @Composable
     fun wallpaperColours(dark: Boolean): ColorScheme?
