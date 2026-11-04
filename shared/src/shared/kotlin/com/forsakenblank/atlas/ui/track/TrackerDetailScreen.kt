@@ -1,5 +1,21 @@
 package com.forsakenblank.atlas.ui.track
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
+import com.forsakenblank.atlas.util.ChartGroup
+import com.forsakenblank.atlas.util.StatRange
+import com.forsakenblank.atlas.util.chartBuckets
+import com.forsakenblank.atlas.util.chartGroups
+import com.forsakenblank.atlas.util.defaultChartGroup
+import com.forsakenblank.atlas.util.periodAverages
+import com.forsakenblank.atlas.util.statPeriod
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -140,6 +156,10 @@ fun TrackerDetailScreen(id: Long, navigator: AtlasNavigator) {
     var logging by remember { mutableStateOf(false) }
     var loggingPast by remember { mutableStateOf(false) }
     var range by rememberSaveable { mutableStateOf(StatRange.WEEK) }
+    var offset by rememberSaveable { mutableStateOf(0) }           // how many weeks, months or years back
+    var chosenGroup by rememberSaveable { mutableStateOf<ChartGroup?>(null) }
+    var lineChart by rememberSaveable { mutableStateOf(false) }
+    var picked by rememberSaveable { mutableStateOf<Int?>(null) }  // the bar that was tapped
     // timers show minutes first, a tap on the total goes on to hours, then days, then round again
     var timeUnit by rememberSaveable { mutableStateOf(TimeUnitView.MINUTES) }
     var confirmDelete by remember { mutableStateOf<LogEntry?>(null) }
@@ -187,34 +207,46 @@ fun TrackerDetailScreen(id: Long, navigator: AtlasNavigator) {
         // totals make sense for counts and sums, averages for ratings and things like weight
         val averages = kind == TrackerKind.RATING || (kind == TrackerKind.NUMBER && t.tracker.aggregate != null && t.tracker.aggregate != Aggregate.SUM)
         val firstDay = byDay.keys.minOrNull() ?: today
-        val start = range.days?.let { today.minusDays(it - 1L) } ?: minOf(firstDay, today)
-        val inRange = byDay.filterKeys { it >= start }
+        val period = statPeriod(range, offset, today, firstDay)
+        val start = period.start
+        val end = period.endInclusive
+        val inRange = byDay.filterKeys { it >= start && it <= end }
         val rangeValues = inRange.mapNotNull { (_, dayLogs) -> dayValue(t.tracker, dayLogs) }
-        val rangeLabel = (if (averages) "Average, ${range.label.lowercase()}" else "Total, ${range.label.lowercase()}") +
-            if (kind == TrackerKind.TIMER) " (tap to change unit)" else ""
+        val periodName = when (range) {
+            StatRange.WEEK -> if (offset == 0) "Last 7 days" else "${start.format(DateTimeFormatter.ofPattern("d MMM"))} to ${end.format(DateTimeFormatter.ofPattern("d MMM yyyy"))}"
+            StatRange.MONTH -> start.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+            StatRange.YEAR -> "${start.year}"
+            StatRange.ALL -> "All time"
+        }
+        val rangeLabel = (if (averages) "Average" else "Total") + if (kind == TrackerKind.TIMER) " (tap to change unit)" else ""
+        fun show(value: Double): String =
+            if (kind == TrackerKind.TIMER) timeUnit.format(value) else "${formatNumber(value)} $unitLabel".trim()
         val rangeStat = when {
             rangeValues.isEmpty() -> "None"
-            kind == TrackerKind.TIMER -> timeUnit.format(rangeValues.sum())
-            averages -> "${formatNumber(rangeValues.average())} $unitLabel".trim()
-            else -> "${formatNumber(rangeValues.sum())} $unitLabel".trim()
+            averages -> show(rangeValues.average())
+            else -> show(rangeValues.sum())
         }
-        val spanDays = ChronoUnit.DAYS.between(start, today).toInt() + 1
-        // a long stretch is shown a month at a time so the bars stay readable
-        val monthly = spanDays > 45
-        val values: List<Float>
-        val firstLabel: String
-        if (monthly) {
-            val months = generateSequence(YearMonth.from(start)) { it.plusMonths(1) }.takeWhile { it <= YearMonth.from(today) }.toList()
-            values = months.map { month ->
-                val perDay = byDay.filterKeys { YearMonth.from(it) == month }.values.mapNotNull { dayValue(t.tracker, it) }
-                (if (averages) perDay.average().takeIf { perDay.isNotEmpty() } ?: 0.0 else perDay.sum()).toFloat()
-            }
-            firstLabel = months.first().format(DateTimeFormatter.ofPattern("MMM yyyy"))
-        } else {
-            val shownDays = (spanDays - 1 downTo 0).map { today.minusDays(it.toLong()) }
-            values = shownDays.map { (dayValue(t.tracker, byDay[it].orEmpty()) ?: 0.0).toFloat() }
-            firstLabel = shownDays.first().format(DateTimeFormatter.ofPattern("d MMM"))
+        val groups = chartGroups(period)
+        val group = chosenGroup?.takeIf { it in groups } ?: defaultChartGroup(period)
+        val buckets = chartBuckets(period, group)
+        val values = buckets.map { bucket ->
+            val perDay = byDay.filterKeys { it >= bucket.start && it <= bucket.endInclusive }.values.mapNotNull { dayValue(t.tracker, it) }
+            if (averages) perDay.average().takeIf { perDay.isNotEmpty() } ?: 0.0 else perDay.sum()
         }
+        val bucketName = { i: Int ->
+            buckets[i].start.format(
+                DateTimeFormatter.ofPattern(
+                    when (group) {
+                        ChartGroup.DAY -> "EEE d MMM yyyy"
+                        ChartGroup.MONTH -> "MMMM yyyy"
+                        ChartGroup.YEAR -> "yyyy"
+                    },
+                ),
+            )
+        }
+        // shared over the days since the first log, days with nothing logged count
+        val covered = maxOf(start, firstDay)
+        val perPeriod = if (!averages && covered <= end) periodAverages(rangeValues.sum(), covered, end) else null
         val todaySummary = TrackerSummary(
             item = t.item,
             tracker = t.tracker,
@@ -261,7 +293,38 @@ fun TrackerDetailScreen(id: Long, navigator: AtlasNavigator) {
             item {
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     StatRange.entries.forEach { r ->
-                        FilterChip(selected = range == r, onClick = { range = r }, label = { Text(r.label) })
+                        FilterChip(
+                            selected = range == r,
+                            onClick = {
+                                range = r
+                                offset = 0
+                                picked = null
+                            },
+                            label = { Text(r.label) },
+                        )
+                    }
+                }
+            }
+            item {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (range != StatRange.ALL) {
+                        IconButton(
+                            onClick = {
+                                offset++
+                                picked = null
+                            },
+                            enabled = start > firstDay,
+                        ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Further back") }
+                    }
+                    Text(periodName, style = MaterialTheme.typography.titleSmall, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                    if (range != StatRange.ALL) {
+                        IconButton(
+                            onClick = {
+                                offset--
+                                picked = null
+                            },
+                            enabled = offset > 0,
+                        ) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Forward") }
                     }
                 }
             }
@@ -276,14 +339,56 @@ fun TrackerDetailScreen(id: Long, navigator: AtlasNavigator) {
                     StatCard("Days logged", "${inRange.size}", Modifier.weight(1f))
                 }
             }
+            if (perPeriod != null) {
+                item {
+                    val cards = buildList {
+                        add("Average a day" to perPeriod.perDay)
+                        if (range == StatRange.YEAR || range == StatRange.ALL) add("Average a month" to perPeriod.perMonth)
+                        if (range == StatRange.ALL) add("Average a year" to perPeriod.perYear)
+                    }
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        cards.forEach { (label, value) ->
+                            StatCard(label, show(value), Modifier.weight(1f), onClick = if (kind == TrackerKind.TIMER) ({ timeUnit = timeUnit.next() }) else null)
+                        }
+                    }
+                }
+            }
             item {
                 Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(if (monthly) "${range.label}, by month" else range.label, style = MaterialTheme.typography.titleSmall)
-                        BarChart(values, accent, goal = if (kind == TrackerKind.RATING) 5f else t.tracker.dailyGoal?.toFloat())
+                        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilterChip(selected = !lineChart, onClick = { lineChart = false }, label = { Text("Bars") })
+                            FilterChip(selected = lineChart, onClick = { lineChart = true }, label = { Text("Line") })
+                            if (groups.size > 1) {
+                                groups.forEach { g ->
+                                    FilterChip(
+                                        selected = group == g,
+                                        onClick = {
+                                            chosenGroup = g
+                                            picked = null
+                                        },
+                                        label = { Text(g.label) },
+                                    )
+                                }
+                            }
+                        }
+                        val shown = picked?.takeIf { it in values.indices }
+                        Text(
+                            if (shown != null) "${bucketName(shown)}: ${show(values[shown])}" else "Tap the chart for one ${group.name.lowercase()}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (shown != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        TrackerChart(
+                            values = values.map { it.toFloat() },
+                            color = accent,
+                            goal = if (kind == TrackerKind.RATING) 5f else t.tracker.dailyGoal?.toFloat().takeIf { group == ChartGroup.DAY },
+                            line = lineChart,
+                            picked = shown,
+                            onPick = { picked = it },
+                        )
                         Row {
-                            Text(firstLabel, style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
-                            Text(if (monthly) "This month" else "Today", style = MaterialTheme.typography.labelSmall)
+                            Text(bucketName(0), style = MaterialTheme.typography.labelSmall, modifier = Modifier.weight(1f))
+                            Text(bucketName(buckets.lastIndex), style = MaterialTheme.typography.labelSmall)
                         }
                     }
                 }
@@ -370,14 +475,6 @@ fun TrackerDetailScreen(id: Long, navigator: AtlasNavigator) {
     }
 }
 
-// how far back the numbers and the chart look, a null length means everything
-private enum class StatRange(val label: String, val days: Int?) {
-    WEEK("Week", 7),
-    MONTH("Month", 30),
-    YEAR("Year", 365),
-    ALL("All time", null),
-}
-
 // the unit a timer total is shown in
 private enum class TimeUnitView {
     MINUTES, HOURS, DAYS;
@@ -403,19 +500,39 @@ private fun StatCard(label: String, value: String, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun BarChart(values: List<Float>, color: Color, goal: Float?) {
+private fun TrackerChart(values: List<Float>, color: Color, goal: Float?, line: Boolean, picked: Int?, onPick: (Int) -> Unit) {
     val track = color.copy(alpha = 0.15f)
+    val faded = color.copy(alpha = 0.45f)
     val goalColor = MaterialTheme.colorScheme.outline
-    Canvas(Modifier.fillMaxWidth().height(140.dp)) {
+    val latest = rememberUpdatedState(onPick)
+    Canvas(
+        Modifier
+            .fillMaxWidth()
+            .height(160.dp)
+            .pointerInput(values.size) {
+                detectTapGestures { at ->
+                    latest.value(((at.x / size.width) * values.size).toInt().coerceIn(0, values.lastIndex))
+                }
+            },
+    ) {
         val max = maxOf(values.maxOrNull() ?: 0f, goal ?: 0f, 1f)
         val slot = size.width / values.size
-        val barWidth = slot * 0.62f
-        values.forEachIndexed { i, v ->
-            val x = i * slot + (slot - barWidth) / 2
-            drawRoundRect(track, Offset(x, 0f), Size(barWidth, size.height), CornerRadius(6f, 6f))
-            val h = size.height * (v / max)
-            if (h > 0f) {
-                drawRoundRect(color, Offset(x, size.height - h), Size(barWidth, h), CornerRadius(6f, 6f))
+        if (line) {
+            val points = values.mapIndexed { i, v -> Offset(i * slot + slot / 2, size.height - size.height * (v / max)) }
+            val path = Path()
+            points.forEachIndexed { i, p -> if (i == 0) path.moveTo(p.x, p.y) else path.lineTo(p.x, p.y) }
+            drawPath(path, color, style = Stroke(width = 5f))
+            points.forEachIndexed { i, p -> drawCircle(color, if (i == picked) 11f else 5f, p) }
+        } else {
+            val barWidth = slot * 0.62f
+            values.forEachIndexed { i, v ->
+                val x = i * slot + (slot - barWidth) / 2
+                drawRoundRect(track, Offset(x, 0f), Size(barWidth, size.height), CornerRadius(6f, 6f))
+                val h = size.height * (v / max)
+                if (h > 0f) {
+                    val fill = if (picked == null || picked == i) color else faded
+                    drawRoundRect(fill, Offset(x, size.height - h), Size(barWidth, h), CornerRadius(6f, 6f))
+                }
             }
         }
         if (goal != null && goal > 0f) {

@@ -189,7 +189,7 @@ class HomeViewModel(private val repo: AtlasRepository) : ViewModel() {
         viewModelScope.launch { repo.setTaskDone(task, done) }
     }
 
-    suspend fun newNote(): Long = repo.createNote(parentId = null)
+    suspend fun newNote(markdown: Boolean = false): Long = repo.createNote(parentId = null, markdown = markdown)
 
     val countdowns = repo.countdowns().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -357,7 +357,7 @@ fun HomeScreen(navigator: AtlasNavigator) {
                         leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
                         onClick = {
                             addMenu = false
-                            scope.launch { navigator.openNote(vm.newNote()) }
+                            scope.launch { navigator.openNote(vm.newNote(settings.newNotesMarkdown)) }
                         },
                     )
                     DropdownMenuItem(

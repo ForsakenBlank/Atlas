@@ -257,7 +257,7 @@ private fun AtlasRootContent(wide: Boolean) {
         app.launches.collect { launch ->
             app.launches.resetReplayCache()
             when (launch) {
-                Launch.NEW_NOTE -> navigator.openNote(app.repository.createNote(parentId = null))
+                Launch.NEW_NOTE -> navigator.openNote(app.repository.createNote(parentId = null, markdown = settings.newNotesMarkdown))
                 Launch.TASKS -> navigator.openSection(Section.TASKS, isTab = false)
                 Launch.JOURNAL -> navigator.openSection(Section.JOURNAL, isTab = false)
                 Launch.HABITS -> navigator.openSection(Section.HABITS, isTab = false)

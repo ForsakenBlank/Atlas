@@ -33,7 +33,7 @@ data class Backup(
     val dayNotes: List<DayNote> = emptyList(),
 ) {
     companion object {
-        const val CURRENT_VERSION = 8
+        const val CURRENT_VERSION = 9
     }
 }
 

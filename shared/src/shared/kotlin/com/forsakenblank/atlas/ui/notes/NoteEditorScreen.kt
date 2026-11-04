@@ -1,5 +1,32 @@
 package com.forsakenblank.atlas.ui.notes
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.FormatSize
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.VisualTransformation
+import com.forsakenblank.atlas.data.NoteFont
+import com.forsakenblank.atlas.data.NoteSpacing
+import com.forsakenblank.atlas.data.TextSize
+import com.forsakenblank.atlas.ui.common.atlasApp
+import com.forsakenblank.atlas.util.MdEdit
+import com.forsakenblank.atlas.util.continueList
+import com.forsakenblank.atlas.util.insertBlock
+import com.forsakenblank.atlas.util.markdownToPlain
+import com.forsakenblank.atlas.util.numberLines
+import com.forsakenblank.atlas.util.setHeading
+import com.forsakenblank.atlas.util.toggleLinePrefix
+import com.forsakenblank.atlas.util.toggleTaskLine
+import com.forsakenblank.atlas.util.wrapSelection
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -77,6 +104,8 @@ class NoteEditorViewModel(
         private set
     var loaded by mutableStateOf(false)
         private set
+    var markdown by mutableStateOf(false)
+        private set
 
     private var dirty = false
     private var saveJob: Job? = null
@@ -85,6 +114,7 @@ class NoteEditorViewModel(
         viewModelScope.launch {
             title = repo.item(id)?.name.orEmpty()
             text = repo.noteText(id)
+            markdown = repo.noteIsMarkdown(id)
             loaded = true
         }
     }
@@ -106,6 +136,18 @@ class NoteEditorViewModel(
         saveJob = viewModelScope.launch {
             delay(500)
             repo.saveNote(id, title, text)
+            dirty = false
+        }
+    }
+
+    // turning markdown into plain text can also take the symbols out of the words
+    fun setMarkdown(on: Boolean, newText: String = text) {
+        saveJob?.cancel()
+        markdown = on
+        text = newText
+        viewModelScope.launch {
+            repo.setNoteMarkdown(id, newText, on)
+            repo.saveNote(id, title, newText)
             dirty = false
         }
     }
@@ -152,7 +194,41 @@ class NoteEditorViewModel(
 fun NoteEditorScreen(id: Long, navigator: AtlasNavigator) {
     val vm = atlasViewModel { NoteEditorViewModel(id, it.repository, it.appScope) }
     val settings = LocalSettings.current
-    val bodyStyle = MaterialTheme.typography.bodyLarge.let { it.copy(fontSize = it.fontSize * settings.editorTextSize.scale, lineHeight = it.lineHeight * settings.editorTextSize.scale) }
+    val app = atlasApp()
+    val bodyStyle = MaterialTheme.typography.bodyLarge.let {
+        it.copy(
+            fontSize = it.fontSize * settings.editorTextSize.scale,
+            lineHeight = it.lineHeight * settings.editorTextSize.scale * settings.noteSpacing.scale,
+            fontFamily = when (settings.noteFont) {
+                NoteFont.SANS -> FontFamily.SansSerif
+                NoteFont.SERIF -> FontFamily.Serif
+                NoteFont.MONO -> FontFamily.Monospace
+            },
+        )
+    }
+    val colors = MaterialTheme.colorScheme
+    var field by remember { mutableStateOf(TextFieldValue("")) }
+    var preview by remember { mutableStateOf(false) }
+    var lookMenu by remember { mutableStateOf(false) }
+    var askConvert by remember { mutableStateOf(false) }
+    LaunchedEffect(vm.loaded, vm.text) {
+        if (field.text != vm.text) field = TextFieldValue(vm.text, TextRange(vm.text.length))
+    }
+
+    fun apply(edit: MdEdit) {
+        field = TextFieldValue(edit.text, TextRange(edit.start, edit.end))
+        vm.onTextChange(edit.text)
+    }
+
+    fun onTyped(value: TextFieldValue) {
+        val next = if (vm.markdown && value.selection.collapsed) continueList(field.text, value.text, value.selection.start) else null
+        if (next != null) {
+            apply(next)
+        } else {
+            field = value
+            if (value.text != vm.text) vm.onTextChange(value.text)
+        }
+    }
     val item by vm.item.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
     var pickingColor by remember { mutableStateOf(false) }
@@ -173,6 +249,32 @@ fun NoteEditorScreen(id: Long, navigator: AtlasNavigator) {
                     }
                 },
                 actions = {
+                    if (vm.markdown) {
+                        IconButton(onClick = { preview = !preview }) {
+                            if (preview) {
+                                Icon(Icons.Outlined.Edit, contentDescription = "Edit")
+                            } else {
+                                Icon(Icons.Outlined.Visibility, contentDescription = "Preview")
+                            }
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { lookMenu = true }) { Icon(Icons.Outlined.FormatSize, contentDescription = "Text look") }
+                        DropdownMenu(expanded = lookMenu, onDismissRequest = { lookMenu = false }) {
+                            Text("Font", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                            NoteFont.entries.forEach { f ->
+                                DropdownMenuItem(text = { Text((if (settings.noteFont == f) "✓ " else "") + f.label) }, onClick = { app.updateSettings { it.copy(noteFont = f) } })
+                            }
+                            Text("Size", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                            TextSize.entries.forEach { s ->
+                                DropdownMenuItem(text = { Text((if (settings.editorTextSize == s) "✓ " else "") + s.label) }, onClick = { app.updateSettings { it.copy(editorTextSize = s) } })
+                            }
+                            Text("Line spacing", style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp))
+                            NoteSpacing.entries.forEach { s ->
+                                DropdownMenuItem(text = { Text((if (settings.noteSpacing == s) "✓ " else "") + s.label) }, onClick = { app.updateSettings { it.copy(noteSpacing = s) } })
+                            }
+                        }
+                    }
                     IconButton(onClick = vm::togglePin) {
                         if (item?.pinned == true) {
                             Icon(Icons.Filled.PushPin, contentDescription = "Unpin", tint = MaterialTheme.colorScheme.primary)
@@ -184,6 +286,18 @@ fun NoteEditorScreen(id: Long, navigator: AtlasNavigator) {
                         Icon(Icons.Outlined.MoreVert, contentDescription = "More")
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        DropdownMenuItem(
+                            text = { Text(if (vm.markdown) "Turn into plain text (.txt)" else "Turn into markdown (.md)") },
+                            leadingIcon = { Icon(Icons.Outlined.Code, contentDescription = null) },
+                            onClick = {
+                                menuOpen = false
+                                if (vm.markdown) {
+                                    askConvert = true
+                                } else {
+                                    vm.setMarkdown(true)
+                                }
+                            },
+                        )
                         DropdownMenuItem(
                             text = { Text("Colour") },
                             leadingIcon = { Icon(Icons.Outlined.Palette, contentDescription = null) },
@@ -246,15 +360,52 @@ fun NoteEditorScreen(id: Long, navigator: AtlasNavigator) {
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                TextField(
-                    value = vm.text,
-                    onValueChange = vm::onTextChange,
-                    placeholder = { Text("Start writing. Use #tags to group notes.") },
-                    textStyle = bodyStyle,
-                    colors = fieldColors,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (vm.markdown && !preview) {
+                    val start = minOf(field.selection.start, field.selection.end)
+                    val end = maxOf(field.selection.start, field.selection.end)
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 8.dp)) {
+                        listOf<Pair<String, () -> Unit>>(
+                            "B" to { apply(wrapSelection(field.text, start, end, "**")) },
+                            "I" to { apply(wrapSelection(field.text, start, end, "*")) },
+                            "U" to { apply(wrapSelection(field.text, start, end, "<u>", "</u>")) },
+                            "S" to { apply(wrapSelection(field.text, start, end, "~~")) },
+                            "Mark" to { apply(wrapSelection(field.text, start, end, "==")) },
+                            "H1" to { apply(setHeading(field.text, start, end, 1)) },
+                            "H2" to { apply(setHeading(field.text, start, end, 2)) },
+                            "H3" to { apply(setHeading(field.text, start, end, 3)) },
+                            "•" to { apply(toggleLinePrefix(field.text, start, end, "- ")) },
+                            "1." to { apply(numberLines(field.text, start, end)) },
+                            "☐" to { apply(toggleLinePrefix(field.text, start, end, "- [ ] ")) },
+                            "❝" to { apply(toggleLinePrefix(field.text, start, end, "> ")) },
+                            "</>" to { apply(wrapSelection(field.text, start, end, "`")) },
+                            "Code" to { apply(wrapSelection(field.text, start, end, "```\n", "\n```")) },
+                            "Link" to { apply(wrapSelection(field.text, start, end, "[", "](https://)")) },
+                            "Line" to { apply(insertBlock(field.text, end, "---")) },
+                            "Table" to { apply(insertBlock(field.text, end, "| Column | Column |\n| --- | --- |\n|  |  |")) },
+                        ).forEach { (label, action) ->
+                            TextButton(onClick = action) { Text(label, fontWeight = FontWeight.SemiBold) }
+                        }
+                    }
+                }
+                if (vm.markdown && preview) {
+                    MarkdownView(
+                        text = vm.text,
+                        style = bodyStyle.copy(color = colors.onSurface),
+                        onToggleTask = { line -> vm.onTextChange(toggleTaskLine(vm.text, line)) },
+                        modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    )
+                } else {
+                    TextField(
+                        value = field,
+                        onValueChange = ::onTyped,
+                        placeholder = { Text(if (vm.markdown) "Start writing. The bar above formats what you select." else "Start writing. Use #tags to group notes.") },
+                        textStyle = bodyStyle,
+                        colors = fieldColors,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                        visualTransformation = if (vm.markdown) remember(colors) { MarkdownEditing(colors) } else VisualTransformation.None,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
                 if (tags.isNotEmpty()) {
                     FlowRow(
                         modifier = Modifier.padding(horizontal = 16.dp),
@@ -273,6 +424,29 @@ fun NoteEditorScreen(id: Long, navigator: AtlasNavigator) {
                 }
             }
         }
+    }
+
+    if (askConvert) {
+        AlertDialog(
+            onDismissRequest = { askConvert = false },
+            title = { Text("Turn into plain text?") },
+            text = { Text("Formatting stops showing. You can take the symbols like ** and # out of the words too, or keep them in case you change back.") },
+            confirmButton = {
+                Column {
+                    TextButton(onClick = {
+                        askConvert = false
+                        preview = false
+                        vm.setMarkdown(false, markdownToPlain(vm.text))
+                    }) { Text("Take the symbols out") }
+                    TextButton(onClick = {
+                        askConvert = false
+                        preview = false
+                        vm.setMarkdown(false)
+                    }) { Text("Keep the symbols") }
+                    TextButton(onClick = { askConvert = false }) { Text("Cancel") }
+                }
+            },
+        )
     }
 
     if (pickingColor) {

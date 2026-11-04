@@ -1,5 +1,7 @@
 package com.forsakenblank.atlas.ui.settings
 
+import com.forsakenblank.atlas.data.NoteFont
+import com.forsakenblank.atlas.data.NoteSpacing
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Animation
 import androidx.compose.material.icons.outlined.CalendarMonth
@@ -280,6 +282,9 @@ val AllSettings: List<Setting> = listOf(
     Setting.Toggle(SettingsCategory.NOTES, "Show dates on notes", get = { it.showNoteDates }, set = { s, v -> s.copy(showNoteDates = v) }),
     Setting.Toggle(SettingsCategory.NOTES, "Word count", "Words and characters under the editor", "count words", get = { it.showWordCount }, set = { s, v -> s.copy(showWordCount = v) }),
     Setting.Choice(SettingsCategory.NOTES, "Editor text size", keywords = "font size editor", options = TextSize.entries, label = { it.label }, get = { it.editorTextSize }, set = { s, v -> s.copy(editorTextSize = v) }),
+    Setting.Choice(SettingsCategory.NOTES, "Editor font", keywords = "font typeface", options = NoteFont.entries, label = { it.label }, get = { it.noteFont }, set = { s, v -> s.copy(noteFont = v) }),
+    Setting.Choice(SettingsCategory.NOTES, "Editor line spacing", keywords = "line height", options = NoteSpacing.entries, label = { it.label }, get = { it.noteSpacing }, set = { s, v -> s.copy(noteSpacing = v) }),
+    Setting.Toggle(SettingsCategory.NOTES, "New notes are markdown", "The + button in Explorer always lets you pick", "markdown md format", get = { it.newNotesMarkdown }, set = { s, v -> s.copy(newNotesMarkdown = v) }),
 
     // track
     Setting.Toggle(SettingsCategory.TRACK, "Undo after logging", "Show an Undo button after each tap", "undo snackbar", get = { it.showUndo }, set = { s, v -> s.copy(showUndo = v) }),

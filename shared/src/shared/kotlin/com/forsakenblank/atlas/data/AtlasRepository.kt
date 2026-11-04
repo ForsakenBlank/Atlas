@@ -142,19 +142,25 @@ class AtlasRepository(private val db: AtlasDatabase) {
 
     fun usedTags(): Flow<List<Tag>> = tags.usedTags()
 
-    suspend fun createNote(parentId: Long?, title: String = ""): Long = db.inTransaction {
+    suspend fun createNote(parentId: Long?, title: String = "", markdown: Boolean = false): Long = db.inTransaction {
         val id = items.insert(Item(type = ItemType.NOTE, parentId = parentId, name = title))
-        notes.upsert(NoteBody(id, ""))
+        notes.upsert(NoteBody(id, "", markdown))
         id
     }
 
     suspend fun noteText(id: Long): String = notes.body(id)?.text.orEmpty()
 
+    suspend fun noteIsMarkdown(id: Long): Boolean = notes.body(id)?.markdown ?: false
+
+    suspend fun setNoteMarkdown(id: Long, text: String, markdown: Boolean) {
+        notes.upsert(NoteBody(id, text, markdown))
+    }
+
     suspend fun saveNote(id: Long, title: String, text: String) {
         db.inTransaction {
             val item = items.get(id) ?: return@inTransaction
             items.update(item.copy(name = title, updated = System.currentTimeMillis()))
-            notes.upsert(NoteBody(id, text))
+            notes.upsert(NoteBody(id, text, notes.body(id)?.markdown ?: false))
             setTags(id, findTags(text))
         }
     }
