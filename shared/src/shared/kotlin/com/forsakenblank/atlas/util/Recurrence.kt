@@ -88,7 +88,7 @@ fun weekSpans(events: List<Event>, weekStart: LocalDate): List<WeekSpan> {
             val free = laneEnds.indexOfFirst { it < startCol }
             val lane = if (free >= 0) free else laneEnds.size
             if (lane == laneEnds.size) laneEnds += endCol else laneEnds[lane] = endCol
-            WeekSpan(event, startCol, endCol, lane, first < weekStart, last > weekEnd)
+            WeekSpan(event, startCol, endCol, lane, continuesBefore = (first < weekStart), continuesAfter = (last > weekEnd))
         }
 }
 
