@@ -46,6 +46,10 @@ enum class NoteSort(val label: String) { EDITED("Last edited"), CREATED("Date cr
 
 enum class NoteLayout(val label: String) { LIST("List"), GRID("Grid"), COMPACT("Compact") }
 
+enum class NoteFont(val label: String) { SANS("Sans serif"), SERIF("Serif"), MONO("Monospace") }
+
+enum class NoteSpacing(val label: String, val scale: Float) { TIGHT("Tight", 0.9f), NORMAL("Normal", 1f), RELAXED("Relaxed", 1.25f), WIDE("Wide", 1.5f) }
+
 enum class TextSize(val label: String, val scale: Float) { SMALL("Small", 0.9f), NORMAL("Normal", 1f), LARGE("Large", 1.15f), HUGE("Huge", 1.3f) }
 
 enum class ExplorerSort(val label: String) { NAME("Name"), EDITED("Last edited"), CREATED("Date created"), TYPE("Type") }
@@ -116,6 +120,9 @@ data class AppSettings(
     val notePreviewLines: Int = 2,
     val showWordCount: Boolean = true,
     val editorTextSize: TextSize = TextSize.NORMAL,
+    val noteFont: NoteFont = NoteFont.SANS,
+    val noteSpacing: NoteSpacing = NoteSpacing.NORMAL,
+    val newNotesMarkdown: Boolean = false,
     val pinnedFirst: Boolean = true,
     val showNoteDates: Boolean = true,
 

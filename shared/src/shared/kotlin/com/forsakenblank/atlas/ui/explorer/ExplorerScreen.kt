@@ -1,5 +1,22 @@
 package com.forsakenblank.atlas.ui.explorer
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.outlined.CheckBox
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.automirrored.outlined.List
+import androidx.compose.material.icons.automirrored.outlined.Sort
+import androidx.compose.material.icons.outlined.SelectAll
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import com.forsakenblank.atlas.ui.common.atlasApp
 import com.forsakenblank.atlas.platform.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -106,7 +123,7 @@ class ExplorerViewModel(private val repo: AtlasRepository) : ViewModel() {
         viewModelScope.launch { repo.createFolder(name, folderId.value) }
     }
 
-    suspend fun createNote(): Long = repo.createNote(folderId.value)
+    suspend fun createNote(markdown: Boolean): Long = repo.createNote(folderId.value, markdown = markdown)
 
     suspend fun createSheet(name: String): Long = repo.createSheet(folderId.value, name)
 
@@ -124,6 +141,18 @@ class ExplorerViewModel(private val repo: AtlasRepository) : ViewModel() {
 
     fun trash(item: Item) {
         viewModelScope.launch { repo.moveToTrash(item) }
+    }
+
+    fun trashAll(items: List<Item>) {
+        viewModelScope.launch { repo.moveToTrash(items.map { it.id }) }
+    }
+
+    fun moveAll(items: List<Item>, to: Long?) {
+        viewModelScope.launch { items.forEach { repo.move(it, to) } }
+    }
+
+    fun colourAll(items: List<Item>, color: Int?) {
+        viewModelScope.launch { items.forEach { repo.setColor(it, color) } }
     }
 }
 
@@ -146,6 +175,9 @@ private sealed interface ExplorerDialog {
     data class Colour(val item: Item) : ExplorerDialog
     data class Move(val item: Item) : ExplorerDialog
     data class Trash(val item: Item) : ExplorerDialog
+    data class ColourAll(val items: List<Item>) : ExplorerDialog
+    data class MoveAll(val items: List<Item>) : ExplorerDialog
+    data class TrashAll(val items: List<Item>) : ExplorerDialog
 }
 
 @Composable
@@ -155,27 +187,113 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
     val unsorted by vm.children.collectAsStateWithLifecycle()
     val path by vm.path.collectAsStateWithLifecycle()
     val settings = LocalSettings.current
-    val children = remember(unsorted, settings.explorerSort, settings.foldersFirst) {
-        sortItems(unsorted, settings.explorerSort, settings.foldersFirst)
+    val app = atlasApp()
+    var search by remember { mutableStateOf("") }
+    var searching by remember { mutableStateOf(false) }
+    var sortMenu by remember { mutableStateOf(false) }
+    val children = remember(unsorted, settings.explorerSort, settings.foldersFirst, search) {
+        sortItems(unsorted, settings.explorerSort, settings.foldersFirst).filter { search.isBlank() || it.name.contains(search.trim(), ignoreCase = true) }
+    }
+    // ids rather than items, the list refreshes under a selection when something is saved
+    var selectedIds by remember { mutableStateOf(emptySet<Long>()) }
+    val selecting = selectedIds.isNotEmpty()
+    val selectedItems = children.filter { it.id in selectedIds }
+    fun toggle(item: Item) {
+        selectedIds = if (item.id in selectedIds) selectedIds - item.id else selectedIds + item.id
+    }
+    LaunchedEffect(folderId) {
+        selectedIds = emptySet()
+        search = ""
+        searching = false
     }
     val scope = rememberCoroutineScope()
     var dialog by remember { mutableStateOf<ExplorerDialog?>(null) }
     var addMenu by remember { mutableStateOf(false) }
 
-    BackHandler(enabled = folderId != null) { vm.up() }
+    BackHandler(enabled = folderId != null && !selecting) { vm.up() }
+    BackHandler(enabled = selecting) { selectedIds = emptySet() }
 
-    Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize()) {
+    if (selecting) {
+        Surface(color = MaterialTheme.colorScheme.secondaryContainer) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { selectedIds = emptySet() }) { Icon(Icons.Outlined.Close, contentDescription = "Stop selecting") }
+                Text("${selectedItems.size} selected", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                IconButton(onClick = { selectedIds = children.map { it.id }.toSet() }) { Icon(Icons.Outlined.SelectAll, contentDescription = "Select all") }
+                IconButton(onClick = { dialog = ExplorerDialog.ColourAll(selectedItems) }) { Icon(Icons.Outlined.Palette, contentDescription = "Colour") }
+                IconButton(onClick = { dialog = ExplorerDialog.MoveAll(selectedItems) }) { Icon(Icons.Outlined.FolderOpen, contentDescription = "Move") }
+                IconButton(onClick = {
+                    if (settings.confirmTrash) {
+                        dialog = ExplorerDialog.TrashAll(selectedItems)
+                    } else {
+                        vm.trashAll(selectedItems)
+                        selectedIds = emptySet()
+                    }
+                }) { Icon(Icons.Outlined.Delete, contentDescription = "Move to trash") }
+            }
+        }
+    } else {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (searching) {
+                OutlinedTextField(
+                    value = search,
+                    onValueChange = { search = it },
+                    placeholder = { Text("Search this folder") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f).padding(start = 12.dp),
+                )
+                IconButton(onClick = {
+                    search = ""
+                    searching = false
+                }) { Icon(Icons.Outlined.Close, contentDescription = "Stop searching") }
+            } else {
+                Box(Modifier.weight(1f)) { Breadcrumbs(path, onOpen = vm::open) }
+                IconButton(onClick = { searching = true }) { Icon(Icons.Outlined.Search, contentDescription = "Search") }
+            }
+            Box {
+                IconButton(onClick = { sortMenu = true }) { Icon(Icons.AutoMirrored.Outlined.Sort, contentDescription = "Sort") }
+                DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
+                    ExplorerSort.entries.forEach { sort ->
+                        DropdownMenuItem(
+                            text = { Text((if (settings.explorerSort == sort) "✓ " else "") + sort.label) },
+                            onClick = {
+                                sortMenu = false
+                                app.updateSettings { it.copy(explorerSort = sort) }
+                            },
+                        )
+                    }
+                    DropdownMenuItem(
+                        text = { Text((if (settings.foldersFirst) "✓ " else "") + "Folders first") },
+                        onClick = {
+                            sortMenu = false
+                            app.updateSettings { it.copy(foldersFirst = !it.foldersFirst) }
+                        },
+                    )
+                }
+            }
+            IconButton(onClick = { app.updateSettings { it.copy(explorerGrid = !it.explorerGrid) } }) {
+                if (settings.explorerGrid) {
+                    Icon(Icons.AutoMirrored.Outlined.List, contentDescription = "Show as a list")
+                } else {
+                    Icon(Icons.Outlined.GridView, contentDescription = "Show as tiles")
+                }
+            }
+            if (children.isNotEmpty()) {
+                IconButton(onClick = { selectedIds = setOf(children.first().id) }) { Icon(Icons.Outlined.CheckBox, contentDescription = "Select items") }
+            }
+        }
+    }
+    Box(Modifier.weight(1f).fillMaxWidth()) {
         LazyVerticalGrid(
             columns = if (settings.explorerGrid) GridCells.Adaptive(120.dp) else GridCells.Fixed(1),
             contentPadding = PaddingValues(bottom = 96.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) { Breadcrumbs(path, onOpen = vm::open) }
             if (children.isEmpty()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(
                         icon = Icons.Outlined.FolderOpen,
-                        title = "This folder is empty",
-                        body = "Use the + button to add a folder, note, tracker or sheet here.",
+                        title = if (search.isBlank()) "This folder is empty" else "Nothing here is called that",
+                        body = if (search.isBlank()) "Use the + button to add a folder, note, tracker or sheet here." else "Search looks through this folder by name.",
                     )
                 }
             }
@@ -183,8 +301,13 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
                 ExplorerRow(
                     item = item,
                     tile = settings.explorerGrid,
+                    selecting = selecting,
+                    selected = item.id in selectedIds,
+                    onSelect = { toggle(item) },
                     onOpen = {
-                        when (item.type) {
+                        if (selecting) {
+                            toggle(item)
+                        } else when (item.type) {
                             ItemType.FOLDER -> vm.open(item.id)
                             ItemType.NOTE -> navigator.openNote(item.id)
                             ItemType.TRACKER -> navigator.openTracker(item.id)
@@ -197,7 +320,7 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
                     onTrash = { if (settings.confirmTrash) dialog = ExplorerDialog.Trash(item) else vm.trash(item) },
                 )
             }
-            if (folderId == null) {
+            if (folderId == null && search.isBlank()) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     HorizontalDivider(Modifier.padding(vertical = 8.dp))
                     ListItem(
@@ -226,11 +349,19 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
                     },
                 )
                 DropdownMenuItem(
-                    text = { Text("Note") },
+                    text = { Text("Text note") },
                     leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
                     onClick = {
                         addMenu = false
-                        scope.launch { navigator.openNote(vm.createNote()) }
+                        scope.launch { navigator.openNote(vm.createNote(false)) }
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("Markdown note") },
+                    leadingIcon = { Icon(Icons.Outlined.Description, contentDescription = null) },
+                    onClick = {
+                        addMenu = false
+                        scope.launch { navigator.openNote(vm.createNote(true)) }
                     },
                 )
                 DropdownMenuItem(
@@ -252,9 +383,39 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
             }
         }
     }
+    }
 
     when (val d = dialog) {
         null -> Unit
+        is ExplorerDialog.ColourAll -> ColorPickerDialog(
+            initial = null,
+            onDismiss = { dialog = null },
+            onConfirm = {
+                vm.colourAll(d.items, it)
+                dialog = null
+                selectedIds = emptySet()
+            },
+        )
+        is ExplorerDialog.TrashAll -> ConfirmDialog(
+            title = "Move ${d.items.size} items to trash?",
+            body = "Folders go with everything in them.",
+            button = "Move to trash",
+            onDismiss = { dialog = null },
+        ) {
+            vm.trashAll(d.items)
+            selectedIds = emptySet()
+        }
+        is ExplorerDialog.MoveAll -> MoveDialog(
+            title = "Move ${d.items.size} items to",
+            excluded = d.items.map { it.id }.toSet(),
+            folders = vm.folders.collectAsStateWithLifecycle().value,
+            onDismiss = { dialog = null },
+            onMove = {
+                vm.moveAll(d.items, it)
+                dialog = null
+                selectedIds = emptySet()
+            },
+        )
         ExplorerDialog.NewFolder -> TextInputDialog(
             title = "New folder",
             confirm = "Create",
@@ -302,7 +463,8 @@ fun ExplorerScreen(navigator: AtlasNavigator) {
             onDismiss = { dialog = null },
         ) { vm.trash(d.item) }
         is ExplorerDialog.Move -> MoveDialog(
-            item = d.item,
+            title = "Move ${d.item.name.ifBlank { "item" }} to",
+            excluded = setOf(d.item.id),
             folders = vm.folders.collectAsStateWithLifecycle().value,
             onDismiss = { dialog = null },
             onMove = {
@@ -341,6 +503,9 @@ private fun Breadcrumbs(path: List<Item>, onOpen: (Long?) -> Unit) {
 private fun ExplorerRow(
     item: Item,
     tile: Boolean,
+    selecting: Boolean,
+    selected: Boolean,
+    onSelect: () -> Unit,
     onOpen: () -> Unit,
     onRename: () -> Unit,
     onColour: () -> Unit,
@@ -355,12 +520,14 @@ private fun ExplorerRow(
         ItemType.TRACKER -> "Tracker"
         ItemType.SHEET -> "Sheet"
     }
+    val shade = if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier
     Box {
         if (tile) {
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .combinedClickable(onClick = onOpen, onLongClick = { menu = true })
+                    .then(shade)
+                    .combinedClickable(onClick = onOpen, onLongClick = onSelect)
                     .padding(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
@@ -374,14 +541,33 @@ private fun ExplorerRow(
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
+            if (selecting) {
+                Checkbox(checked = selected, onCheckedChange = { onSelect() }, modifier = Modifier.align(Alignment.TopStart))
+            } else {
+                IconButton(onClick = { menu = true }, modifier = Modifier.align(Alignment.TopEnd).size(32.dp)) {
+                    Icon(Icons.Outlined.MoreVert, contentDescription = "More", modifier = Modifier.size(18.dp))
+                }
+            }
         } else {
             ListItem(
                 headlineContent = { Text(item.name.ifBlank { "Untitled" }) },
                 supportingContent = { Text("$kind, edited ${formatDay(item.updated).lowercase()}") },
-                leadingContent = { Icon(item.type.icon(), contentDescription = null, tint = tint) },
+                leadingContent = {
+                    if (selecting) {
+                        Checkbox(checked = selected, onCheckedChange = { onSelect() })
+                    } else {
+                        Icon(item.type.icon(), contentDescription = null, tint = tint)
+                    }
+                },
+                trailingContent = if (selecting) {
+                    null
+                } else {
+                    { IconButton(onClick = { menu = true }) { Icon(Icons.Outlined.MoreVert, contentDescription = "More") } }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .combinedClickable(onClick = onOpen, onLongClick = { menu = true }),
+                    .then(shade)
+                    .combinedClickable(onClick = onOpen, onLongClick = onSelect),
             )
         }
         DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
@@ -410,10 +596,13 @@ private fun ExplorerRow(
 }
 
 @Composable
-private fun MoveDialog(item: Item, folders: List<Item>, onDismiss: () -> Unit, onMove: (Long?) -> Unit) {
+private fun MoveDialog(title: String, excluded: Set<Long>, folders: List<Item>, onDismiss: () -> Unit, onMove: (Long?) -> Unit) {
+    val byId = remember(folders) { folders.associateBy { it.id } }
+    // the whole way down, two folders can share a name
+    fun pathOf(folder: Item): String = generateSequence(folder) { byId[it.parentId] }.toList().reversed().joinToString(" / ") { it.name }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Move ${item.name.ifBlank { "item" }} to") },
+        title = { Text(title) },
         text = {
             LazyColumn {
                 item {
@@ -423,9 +612,9 @@ private fun MoveDialog(item: Item, folders: List<Item>, onDismiss: () -> Unit, o
                         modifier = Modifier.clickable { onMove(null) },
                     )
                 }
-                listItems(folders.filter { it.id != item.id }, key = { it.id }) { folder ->
+                listItems(folders.filter { it.id !in excluded }.sortedBy { pathOf(it).lowercase() }, key = { it.id }) { folder ->
                     ListItem(
-                        headlineContent = { Text(folder.name) },
+                        headlineContent = { Text(pathOf(folder)) },
                         leadingContent = {
                             Icon(ItemType.FOLDER.icon(), contentDescription = null, tint = folder.color.toItemColor(MaterialTheme.colorScheme.onSurfaceVariant))
                         },

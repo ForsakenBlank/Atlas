@@ -1,5 +1,14 @@
 package com.forsakenblank.atlas.ui.calendar
 
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.pointer.pointerInput
+import com.forsakenblank.atlas.util.WeekSpan
+import com.forsakenblank.atlas.util.isMultiDay
+import com.forsakenblank.atlas.util.toLocalDate
+import com.forsakenblank.atlas.util.weekSpans
+import java.time.Month
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -118,6 +127,7 @@ fun CalendarScreen(navigator: AtlasNavigator) {
     var shownMonth by rememberSaveable { mutableStateOf(YearMonth.from(today).toString()) }
     var dialog by remember { mutableStateOf<CalendarDialog?>(null) }
     var addMenu by remember { mutableStateOf(false) }
+    var pickingMonth by remember { mutableStateOf(false) }
 
     val selected = LocalDate.ofEpochDay(selectedDay)
     val month = YearMonth.parse(shownMonth)
@@ -167,7 +177,7 @@ fun CalendarScreen(navigator: AtlasNavigator) {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = { move(-1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back") }
-                    Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                    Text(title, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, modifier = Modifier.weight(1f).clickable(enabled = view == CalendarView.MONTH) { pickingMonth = true })
                     IconButton(onClick = { move(1) }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Forward") }
                 }
                 if (selected != today || YearMonth.from(today) != month) {
@@ -186,6 +196,7 @@ fun CalendarScreen(navigator: AtlasNavigator) {
                             data = data,
                             settings = settings,
                             onSelect = ::select,
+                            onSwipe = ::move,
                         )
                     }
                     dayContents(selected, data, settings, navigator, vm, header = true) { dialog = it }
@@ -248,6 +259,14 @@ fun CalendarScreen(navigator: AtlasNavigator) {
         }
     }
 
+    if (pickingMonth) {
+        MonthPickerDialog(month, onDismiss = { pickingMonth = false }) { picked ->
+            pickingMonth = false
+            shownMonth = picked.toString()
+            selectedDay = (if (YearMonth.from(today) == picked) today else picked.atDay(1)).toEpochDay()
+        }
+    }
+
     when (val d = dialog) {
         null -> Unit
         is CalendarDialog.EditTask -> TaskEditorDialog(
@@ -280,11 +299,19 @@ private fun MonthGrid(
     data: CalendarData,
     settings: AppSettings,
     onSelect: (LocalDate) -> Unit,
+    onSwipe: (Long) -> Unit,
 ) {
     val weekFields = if (settings.weekStartsMonday) WeekFields.ISO else WeekFields.SUNDAY_START
     // only as many rows as the month needs
     val rows = ((month.atEndOfMonth().toEpochDay() - gridStart.toEpochDay()) / 7 + 1).toInt()
-    Column(Modifier.padding(bottom = 8.dp)) {
+    val swipe = Modifier.pointerInput(month) {
+        var dragged = 0f
+        detectHorizontalDragGestures(
+            onDragStart = { dragged = 0f },
+            onDragEnd = { if (kotlin.math.abs(dragged) > 120f) onSwipe(if (dragged < 0) 1 else -1) },
+        ) { _, amount -> dragged += amount }
+    }
+    Column(Modifier.padding(bottom = 8.dp).then(swipe)) {
         Row {
             if (settings.showWeekNumbers) Spacer(Modifier.width(28.dp))
             (0L..6L).forEach { i ->
@@ -322,8 +349,85 @@ private fun MonthGrid(
                     )
                 }
             }
+            val spans = weekSpans(data.events, gridStart.plusDays(row * 7L))
+            (0..(spans.maxOfOrNull { it.lane } ?: -1)).forEach { lane ->
+                Row(Modifier.fillMaxWidth().padding(bottom = 2.dp)) {
+                    if (settings.showWeekNumbers) Spacer(Modifier.width(28.dp))
+                    var col = 0
+                    spans.filter { it.lane == lane }.sortedBy { it.startCol }.forEach { span ->
+                        if (span.startCol > col) Spacer(Modifier.weight((span.startCol - col).toFloat()))
+                        SpanBar(
+                            span = span,
+                            onClick = { onSelect(gridStart.plusDays(row * 7L + span.startCol)) },
+                            modifier = Modifier.weight((span.endCol - span.startCol + 1).toFloat()),
+                        )
+                        col = span.endCol + 1
+                    }
+                    if (col < 7) Spacer(Modifier.weight((7 - col).toFloat()))
+                }
+            }
         }
     }
+}
+
+// a multi day event drawn across its days, square at an edge where it carries on into the next or last week
+@Composable
+private fun SpanBar(span: WeekSpan, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val accent = span.event.color.toItemColor(MaterialTheme.colorScheme.primary)
+    val left = if (span.continuesBefore) 0.dp else 6.dp
+    val right = if (span.continuesAfter) 0.dp else 6.dp
+    Box(
+        modifier
+            .height(18.dp)
+            .padding(start = if (span.continuesBefore) 0.dp else 2.dp, end = if (span.continuesAfter) 0.dp else 2.dp)
+            .clip(RoundedCornerShape(topStart = left, bottomStart = left, topEnd = right, bottomEnd = right))
+            .background(accent)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            span.event.title,
+            style = MaterialTheme.typography.labelSmall,
+            color = if (accent.luminance() > 0.5f) Color.Black else Color.White,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun MonthPickerDialog(current: YearMonth, onDismiss: () -> Unit, onPick: (YearMonth) -> Unit) {
+    var year by remember { mutableStateOf(current.year) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { year-- }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Last year") }
+                Text("$year", textAlign = TextAlign.Center, modifier = Modifier.weight(1f))
+                IconButton(onClick = { year++ }) { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next year") }
+            }
+        },
+        text = {
+            Column {
+                Month.entries.chunked(3).forEach { row ->
+                    Row {
+                        row.forEach { m ->
+                            TextButton(onClick = { onPick(YearMonth.of(year, m)) }, modifier = Modifier.weight(1f)) {
+                                Text(
+                                    m.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                                    fontWeight = if (current.year == year && current.month == m) FontWeight.Bold else FontWeight.Normal,
+                                    maxLines = 1,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable
@@ -338,7 +442,7 @@ private fun DayCell(
     modifier: Modifier = Modifier,
 ) {
     val colors = MaterialTheme.colorScheme
-    val events = data.eventsOn(day)
+    val events = data.eventsOn(day).filterNot { it.isMultiDay() }     // those have a bar across their days
     val tasks = if (settings.showTasksOnCalendar) data.tasksOn(day).filter { !it.done } + data.repeatsOn(day) else emptyList()
     val logged = settings.showTrackerDots && data.calendarLogsOn(day).isNotEmpty()
     val noted = data.noteOn(day) != null
@@ -412,6 +516,7 @@ private fun LazyListScope.dayContents(
                     color = if (today) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f),
                 )
+                TextButton(onClick = { navigator.openEvent(null, day.toEpochDay()) }) { Text("Add") }
                 TextButton(onClick = { onDialog(CalendarDialog.Details(day)) }) { Text("Full day") }
             }
         }
@@ -496,7 +601,9 @@ internal fun EventRow(event: Event, settings: AppSettings, onClick: () -> Unit) 
             Box(Modifier.width(5.dp).fillMaxHeight().background(accent))
             Column(Modifier.padding(12.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 Text(event.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                val time = if (event.allDay) "All day" else "${formatTime(event.startsAt, settings.use24Hour)} to ${formatTime(event.endsAt, settings.use24Hour)}"
+                val time = if (event.isMultiDay()) {
+                    "${event.startsAt.toLocalDate().format(shortDay)} to ${(event.endsAt - 1).toLocalDate().format(shortDay)}"
+                } else if (event.allDay) "All day" else "${formatTime(event.startsAt, settings.use24Hour)} to ${formatTime(event.endsAt, settings.use24Hour)}"
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Outlined.Event, contentDescription = null, modifier = Modifier.size(14.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     Text(time, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(start = 4.dp))

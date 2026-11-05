@@ -1,5 +1,9 @@
 package com.forsakenblank.atlas.ui.calendar
 
+import androidx.compose.material.icons.outlined.ContentCopy
+import com.forsakenblank.atlas.util.occursOn
+import com.forsakenblank.atlas.util.skippedDayList
+import com.forsakenblank.atlas.util.withSkipped
 import com.forsakenblank.atlas.platform.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -72,7 +76,7 @@ import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 
-class EventEditorViewModel(private val id: Long, firstDay: Long, defaultMinutes: Int, private val repo: AtlasRepository) : ViewModel() {
+class EventEditorViewModel(private val id: Long, private val firstDay: Long, defaultMinutes: Int, private val repo: AtlasRepository) : ViewModel() {
 
     var loaded by mutableStateOf(id == 0L)
         private set
@@ -166,6 +170,38 @@ class EventEditorViewModel(private val id: Long, firstDay: Long, defaultMinutes:
     suspend fun delete() {
         if (id != 0L) repo.deleteEvent(id)
     }
+
+    // the date this was opened from, when that is one of the times it repeats
+    fun openedOn(): LocalDate? {
+        val event = original ?: return null
+        if (event.repeatRule == Repeat.NONE || firstDay <= 0) return null
+        return LocalDate.ofEpochDay(firstDay).takeIf { event.occursOn(it) }
+    }
+
+    suspend fun skip(day: LocalDate) {
+        original?.let { repo.saveEvent(it.withSkipped(day, true)) }
+    }
+
+    fun skippedDates(): List<LocalDate> = original?.skippedDayList().orEmpty().sorted().map { LocalDate.ofEpochDay(it) }
+
+    suspend fun putBack(day: LocalDate) {
+        val event = original?.withSkipped(day, false) ?: return
+        original = event
+        repo.saveEvent(event)
+        skippedVersion++
+    }
+
+    // bumped so the list of skipped dates redraws
+    var skippedVersion by mutableStateOf(0)
+        private set
+
+    suspend fun stopFrom(day: LocalDate) {
+        original?.let { repo.saveEvent(it.copy(repeatUntil = day.minusDays(1).startMillis())) }
+    }
+
+    suspend fun duplicate() {
+        original?.let { repo.saveEvent(it.copy(id = 0, title = "${it.title} (copy)", skippedDays = null)) }
+    }
 }
 
 private val dateFormat = DateTimeFormatter.ofPattern("EEE d MMM yyyy")
@@ -212,6 +248,12 @@ fun EventEditorScreen(id: Long, day: Long, navigator: AtlasNavigator) {
         onBack = ::leave,
         actions = {
             if (id != 0L) {
+                IconButton(onClick = {
+                    scope.launch {
+                        vm.duplicate()
+                        navigator.back()
+                    }
+                }) { Icon(Icons.Outlined.ContentCopy, contentDescription = "Duplicate") }
                 IconButton(onClick = { confirmDelete = true }) { Icon(Icons.Outlined.Delete, contentDescription = "Delete") }
             }
             IconButton(onClick = ::save) { Icon(Icons.Outlined.Check, contentDescription = "Save") }
@@ -270,6 +312,13 @@ fun EventEditorScreen(id: Long, day: Long, navigator: AtlasNavigator) {
                 supportingContent = { Text(vm.repeat.label()) },
                 modifier = Modifier.clickable { picking = Picking.REPEAT },
             )
+            vm.skippedVersion
+            vm.skippedDates().forEach { skipped ->
+                ListItem(
+                    headlineContent = { Text("Skipped ${skipped.format(dateFormat)}") },
+                    trailingContent = { TextButton(onClick = { scope.launch { vm.putBack(skipped) } }) { Text("Put back") } },
+                )
+            }
             if (vm.repeat != Repeat.NONE) {
                 ListItem(
                     headlineContent = { Text("Until") },
@@ -382,7 +431,29 @@ fun EventEditorScreen(id: Long, day: Long, navigator: AtlasNavigator) {
         null -> Unit
     }
 
-    if (confirmDelete) {
+    val occurrence = vm.openedOn()
+    if (confirmDelete && occurrence != null) {
+        fun finish(action: suspend () -> Unit) {
+            confirmDelete = false
+            scope.launch {
+                action()
+                navigator.back()
+            }
+        }
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete which ones?") },
+            text = { Text("This event repeats. You can remove just ${occurrence.format(dateFormat)}.") },
+            confirmButton = {
+                Column {
+                    TextButton(onClick = { finish { vm.skip(occurrence) } }) { Text("Only this one") }
+                    TextButton(onClick = { finish { vm.stopFrom(occurrence) } }) { Text("This one and later ones") }
+                    TextButton(onClick = { finish { vm.delete() } }) { Text("All of them") }
+                    TextButton(onClick = { confirmDelete = false }) { Text("Cancel") }
+                }
+            },
+        )
+    } else if (confirmDelete) {
         ConfirmDialog(
             title = "Delete this event?",
             body = if (vm.repeat != Repeat.NONE) "This deletes every time it repeats." else "It is removed from your calendar.",

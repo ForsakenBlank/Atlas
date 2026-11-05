@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.0.3
+
+* **Tracker charts**: pick bars or a line, group by day, month or year, and tap the chart for one day's or month's
+  number. Go back to any earlier week, month or year with the arrows. Month and Year now mean a calendar month and year
+  instead of the last 30 and 365 days.
+* **Timer averages**: trackers show the average a day, and over longer stretches a month and a year, next to the total.
+* **Explorer**: hold an item (or press the tick button) to select several, then move, colour or trash them together.
+  There is a search box for the folder, sort and list or tile buttons at the top, a ⋮ button on each item, and the
+  move list shows each folder's full path.
+* **Markdown notes**: choose plain text or markdown when you make a note, and turn a note either way from its menu.
+  Markdown has a formatting bar (bold, italic, underline, strikethrough, highlight, headings, lists, checklists,
+  quotes, code, links, lines and tables), shows the formatting as you type and has a preview with tickable checklists.
+  Pick the font, size and line spacing from the Aa button on any note.
+* **Calendar**: events over several days now show as one bar across those days. Deleting a repeating event asks whether
+  you mean only this date, this one and later ones, or all of them, and a skipped date can be put back. You can also
+  swipe between months, tap the month name to jump to any month and duplicate an event.
+
 ## 1.0.2
 
 * **Sync says what went wrong**: when one device can't save what the other sent, both now show the reason instead

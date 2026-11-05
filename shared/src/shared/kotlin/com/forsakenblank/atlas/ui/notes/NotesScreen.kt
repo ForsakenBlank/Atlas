@@ -1,5 +1,7 @@
 package com.forsakenblank.atlas.ui.notes
 
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import com.forsakenblank.atlas.platform.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -101,7 +103,7 @@ class NotesViewModel(private val repo: AtlasRepository) : ViewModel() {
         selectedTag.value = if (selectedTag.value?.id == tag.id) null else tag
     }
 
-    suspend fun newNote(): Long = repo.createNote(parentId = null)
+    suspend fun newNote(markdown: Boolean = false): Long = repo.createNote(parentId = null, markdown = markdown)
 
     fun trash(ids: Set<Long>) {
         viewModelScope.launch { repo.moveToTrash(ids) }
@@ -221,12 +223,24 @@ fun NotesScreen(navigator: AtlasNavigator) {
                 IconButton(onClick = { confirmTrash = true }) { Icon(Icons.Outlined.Delete, contentDescription = "Move to trash") }
             }
         } else {
-            ExtendedFloatingActionButton(
-                onClick = { scope.launch { navigator.openNote(vm.newNote()) } },
-                icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
-                text = { Text("New note") },
-                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            )
+            var newMenu by remember { mutableStateOf(false) }
+            Box(Modifier.align(Alignment.BottomEnd).padding(16.dp)) {
+                ExtendedFloatingActionButton(
+                    onClick = { newMenu = true },
+                    icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
+                    text = { Text("New note") },
+                )
+                DropdownMenu(expanded = newMenu, onDismissRequest = { newMenu = false }) {
+                    DropdownMenuItem(text = { Text("Plain text (.txt)") }, onClick = {
+                        newMenu = false
+                        scope.launch { navigator.openNote(vm.newNote(false)) }
+                    })
+                    DropdownMenuItem(text = { Text("Markdown (.md)") }, onClick = {
+                        newMenu = false
+                        scope.launch { navigator.openNote(vm.newNote(true)) }
+                    })
+                }
+            }
         }
     }
 

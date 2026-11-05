@@ -64,10 +64,20 @@ data class RecordRef(val kind: String, val uid: String)
 // fields that change on their own or only mean something on the device they are on
 private val ignoredInFingerprint = setOf("updated", "created")
 
+// newer fields count only once they are used, so rows from before they existed keep their fingerprint
+private fun stableFields(fields: JsonObject): Map<String, JsonElement> {
+    val out = fields.filterKeys { it !in ignoredInFingerprint }.toMutableMap()
+    if (out["skippedDays"] == JsonNull) out.remove("skippedDays")
+    (out["note"] as? JsonObject)?.let { note ->
+        if ((note["markdown"] as? JsonPrimitive)?.contentOrNull == "false") out["note"] = JsonObject(note - "markdown")
+    }
+    return out
+}
+
 private fun fingerprint(record: SyncRecord): String {
     val digest = MessageDigest.getInstance("SHA-256")
     digest.update(record.kind.toByteArray())
-    digest.update(canonical(JsonObject(record.fields.filterKeys { it !in ignoredInFingerprint })).toByteArray())
+    digest.update(canonical(JsonObject(stableFields(record.fields))).toByteArray())
     return Base64.getUrlEncoder().withoutPadding().encodeToString(digest.digest()).take(22)
 }
 

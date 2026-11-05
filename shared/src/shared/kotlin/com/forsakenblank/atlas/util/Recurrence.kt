@@ -55,7 +55,41 @@ fun Event.occursOn(day: LocalDate): Boolean {
         val endDay = maxOf(startDay, (endsAt - 1).toLocalDate())
         return day in startDay..endDay
     }
+    if (day.toEpochDay() in skippedDayList()) return false
     return repeatRule.occursOn(startDay, day, repeatUntil?.toLocalDate())
+}
+
+fun Event.skippedDayList(): Set<Long> =
+    skippedDays?.split(",")?.mapNotNull { it.trim().toLongOrNull() }?.toSet().orEmpty()
+
+// takes one date out of a repeat, or puts it back
+fun Event.withSkipped(day: LocalDate, skip: Boolean): Event {
+    val days = if (skip) skippedDayList() + day.toEpochDay() else skippedDayList() - day.toEpochDay()
+    return copy(skippedDays = days.sorted().joinToString(",").ifEmpty { null })
+}
+
+fun Event.isMultiDay(): Boolean = repeatRule == Repeat.NONE && (endsAt - 1).toLocalDate() > startsAt.toLocalDate()
+
+// one stretch of a multi day event across one week of the month grid, columns are 0 to 6
+data class WeekSpan(val event: Event, val startCol: Int, val endCol: Int, val lane: Int, val continuesBefore: Boolean, val continuesAfter: Boolean)
+
+// lays the week's multi day events out in lanes so that none of them overlap
+fun weekSpans(events: List<Event>, weekStart: LocalDate): List<WeekSpan> {
+    val weekEnd = weekStart.plusDays(6)
+    val laneEnds = mutableListOf<Int>()
+    return events.filter { it.isMultiDay() }
+        .filter { it.startsAt.toLocalDate() <= weekEnd && (it.endsAt - 1).toLocalDate() >= weekStart }
+        .sortedWith(compareBy<Event> { it.startsAt }.thenByDescending { it.endsAt })
+        .map { event ->
+            val first = event.startsAt.toLocalDate()
+            val last = (event.endsAt - 1).toLocalDate()
+            val startCol = ChronoUnit.DAYS.between(weekStart, maxOf(first, weekStart)).toInt()
+            val endCol = ChronoUnit.DAYS.between(weekStart, minOf(last, weekEnd)).toInt()
+            val free = laneEnds.indexOfFirst { it < startCol }
+            val lane = if (free >= 0) free else laneEnds.size
+            if (lane == laneEnds.size) laneEnds += endCol else laneEnds[lane] = endCol
+            WeekSpan(event, startCol, endCol, lane, continuesBefore = (first < weekStart), continuesAfter = (last > weekEnd))
+        }
 }
 
 // moves a repeating event onto the given day, keeping its clock times even across a clock change

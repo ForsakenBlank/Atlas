@@ -44,6 +44,7 @@ data class Item(
 data class NoteBody(
     @PrimaryKey val itemId: Long,
     val text: String = "",
+    @ColumnInfo(defaultValue = "0") val markdown: Boolean = false,
 )
 
 // a spreadsheet saved as json, see util/Sheet.kt for what is inside
@@ -128,6 +129,8 @@ data class Event(
     val created: Long = System.currentTimeMillis(),
     // null follows the default in settings, -1 means no reminder, otherwise minutes before the start
     val reminderMinutes: Int? = null,
+    // days taken out of a repeat, as epoch days with commas between them
+    val skippedDays: String? = null,
 )
 
 @Serializable
