@@ -23,10 +23,10 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.time.LocalDate
-import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import org.junit.Test
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 
 class Release103Test {
     private val monday = LocalDate.of(2026, 11, 2)
@@ -61,8 +61,8 @@ class Release103Test {
         assertEquals(LocalDate.of(2026, 1, 1)..today, statPeriod(StatRange.YEAR, 0, today, today))
         assertEquals(3, chartBuckets(LocalDate.of(2026, 1, 15)..LocalDate.of(2026, 3, 2), ChartGroup.MONTH).size)
         val avg = periodAverages(620.0, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 1, 31))
-        assertEquals(20.0, avg.perDay)
-        assertEquals(620.0, avg.perMonth)
+        assertEquals(20.0, avg.perDay, 0.001)
+        assertEquals(620.0, avg.perMonth, 0.001)
     }
 
     @Test
