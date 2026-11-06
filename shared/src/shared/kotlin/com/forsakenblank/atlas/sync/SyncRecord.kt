@@ -101,7 +101,8 @@ fun newUid(): String = UUID.randomUUID().toString()
 class IdBook(rows: List<SyncId>) {
     private val toUid = HashMap<String, HashMap<Long, String>>()
     private val toLocal = HashMap<String, HashMap<String, Long>>()
-    val changed = mutableListOf<SyncId>()
+    private val pending = LinkedHashMap<Pair<String, Long>, SyncId>()
+    val changed: List<SyncId> get() = pending.values.toList()
 
     init {
         rows.forEach { put(it.kind, it.localId, it.uid) }
@@ -121,7 +122,12 @@ class IdBook(rows: List<SyncId>) {
 
     fun link(kind: String, local: Long, uid: String) {
         toUid[kind]?.get(local)?.let { old -> toLocal[kind]?.remove(old) }
+        // a uid names one row, and a row deleted since the last sync can still be holding this one
+        toLocal[kind]?.get(uid)?.takeIf { it != local }?.let { holder ->
+            toUid[kind]?.remove(holder)
+            pending.remove(kind to holder)
+        }
         put(kind, local, uid)
-        changed += SyncId(kind, local, uid)
+        pending[kind to local] = SyncId(kind, local, uid)
     }
 }

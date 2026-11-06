@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4
+
+* **Sync fix**: syncing no longer fails with "couldn't save what the other device sent (Error code: 19...)" after
+  something was deleted on one device and made again with the same name. Update both devices to get the fix, it
+  applies on whichever one is hosting.
+* If the device connecting can't save something it now says so in a full sentence, not just "Error code".
+
 ## 1.0.3
 
 * **Tracker charts**: pick bars or a line, group by day, month or year, and tap the chart for one day's or month's

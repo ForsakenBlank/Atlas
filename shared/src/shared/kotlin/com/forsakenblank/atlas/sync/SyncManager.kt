@@ -203,7 +203,13 @@ class SyncManager(private val app: AtlasApp) {
             val result = withContext(Dispatchers.Default) { current.plan.resolve(choices, "from ${peer.name}") }
             _client.value = ClientStep.Working(SyncStatus("Saving here…"))
             // this side first, if sending fails nothing is remembered and the same changes are offered again
-            store.apply(result.localUpserts, result.localDeletes, emptyList())
+            try {
+                store.apply(result.localUpserts, result.localDeletes, emptyList())
+            } catch (e: Exception) {
+                val me = app.platform.kind.label
+                val detail = e.message?.takeIf { it.isNotBlank() } ?: e.javaClass.simpleName
+                throw SyncException("The $me couldn't save what the ${peer.name} sent ($detail). Nothing was changed on either device.")
+            }
 
             val request = buildJsonObject {
                 put("action", "apply")

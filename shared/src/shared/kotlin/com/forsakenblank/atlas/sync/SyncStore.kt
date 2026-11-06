@@ -146,7 +146,10 @@ class SyncStore(
                     else -> rows.forEach { writeRow(it, book) }
                 }
             }
-            if (book.changed.isNotEmpty()) dao.upsertIds(book.changed)
+            // whichever row held these uids before gives them up first, the table allows one row per uid
+            val ids = book.changed
+            ids.forEach { dao.forgetUid(it.kind, it.uid) }
+            if (ids.isNotEmpty()) dao.upsertIds(ids)
         }
 
         if (themes.isNotEmpty() || themeDeletes.isNotEmpty()) {
